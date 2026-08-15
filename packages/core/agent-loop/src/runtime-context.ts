@@ -9,7 +9,11 @@ import type { Session, UserMessage } from '@deepseek-ai/dsh-session'
 import { isReplacementSurfaceEvent } from '@deepseek-ai/dsh-session'
 import type { Context } from '@deepseek-ai/cordis'
 
-const SOURCE = '@deepseek-ai/dsh-system-prompt'
+// Serves two roles at once: the producer name transcripts render verbatim, and
+// this projection's durable identity, which `isOwned` matches in the log. Editing
+// it is user-visible and invalidates every recorded fixture carrying the old value
+// (see .agents/notes/implemented/feature/2026-08-15-runtime-context-producer-name.md).
+const SOURCE = 'Runtime context'
 const CLEARED = 'Current runtime context: none. Earlier runtime-context snapshots no longer apply.'
 
 function isOwned(message: UserMessage): boolean {
