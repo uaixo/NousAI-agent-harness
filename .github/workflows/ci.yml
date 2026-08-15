@@ -370,9 +370,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-${{ env.PRIMARY_NODE_VERSION }}-pnpm-
 
-      # Master's wine-apt-cache job seeds the default-branch scope every pull
-      # request can read; a save from this job only reaches reruns of the
-      # same merge ref.
+      # The default branch's wine-apt-cache job seeds the default-branch scope
+      # every pull request can read; a save from this job only reaches reruns
+      # of the same merge ref.
       - name: Compose Wine apt cache key
         id: wine-cache-key
         run: echo "key=wine-debs-${ImageOS:-linux}-${ImageVersion:-v0}" >> "$GITHUB_OUTPUT"
@@ -519,7 +519,8 @@ jobs:
           store_path=$(PNPM_CONFIG_STORE_DIR="$store_root" pnpm store path --silent)
           echo "path=$store_path" >> "$GITHUB_OUTPUT"
 
-      # Master refreshes the pnpm store cache that pull requests restore without saving.
+      # The default branch refreshes the pnpm store cache that pull requests
+      # restore without saving.
       # The store cache stays a hand-rolled actions/cache step rather than
       # setup-node's `cache: pnpm`: the enterprise pull-request jobs above
       # restore exactly this key and path, and setup-node's built-in cache
@@ -532,7 +533,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-${{ env.PRIMARY_NODE_VERSION }}-pnpm-
 
-      # Master produces the hosted Chromium cache restored by pull requests.
+      # The default branch produces the hosted Chromium cache restored by pull
+      # requests.
       - uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
