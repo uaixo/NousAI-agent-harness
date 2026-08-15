@@ -593,16 +593,16 @@ describe('MessageItem arms', () => {
         content: [{ type: 'text', text: 'Current runtime context.\n\nsandbox\n\nworkspace' }],
         source: {
           kind: 'plugin',
-          plugin: '@deepseek-ai/dsh-system-prompt',
+          plugin: 'Runtime context',
           form: 'snapshot',
           sections: [{ name: 'sandbox:policy', text: 'workspace-write' }, { name: 'workspace', text: '/repo' }],
         },
-        provenance: { role: 'inject', label: '@deepseek-ai/dsh-system-prompt' },
+        provenance: { role: 'inject', label: 'Runtime context' },
         form: 'snapshot',
       } as never}
       />,
     )
-    fireEvent.click(view.getByRole('button', { name: /^上下文注入\s*@deepseek-ai\/dsh-system-prompt$/ }))
+    fireEvent.click(view.getByRole('button', { name: /^上下文注入\s*Runtime context$/ }))
     const rows = [...view.container.querySelectorAll('[data-context-sections] div')].map(node => node.textContent)
     expect(rows).toEqual(['sandbox:policyworkspace-write', 'workspace/repo'])
   })
