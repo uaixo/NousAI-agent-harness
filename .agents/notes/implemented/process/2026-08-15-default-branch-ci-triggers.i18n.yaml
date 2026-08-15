@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-08-15-default-branch-ci-triggers.md
-2026-08-15-default-branch-ci-triggers.md: 94153f2b860e02f347b8bb45341b81d9ffb1927f
-2026-08-15-default-branch-ci-triggers.zh.md: 5e134c3b828974a75351bd2e00eb438660e74baf
+2026-08-15-default-branch-ci-triggers.md: f5bbc81caa5ecfdf61310868ee3f14297af7b5b7
+2026-08-15-default-branch-ci-triggers.zh.md: 221bdc6f01b88e0270a9c8da2b30ae71abbd2de1
