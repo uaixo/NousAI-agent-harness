@@ -6,13 +6,15 @@ English | [中文](2026-08-15-default-branch-ci-triggers.zh.md)
 
 ## Problem
 
-The repository's default branch moves from `master` to `main`. Seven workflows key their push lane to a literal branch name, and three `ci.yml` jobs additionally guard on `github.ref == 'refs/heads/master'`. Renaming the default branch does not rewrite those literals, so the whole push lane — post-merge CI, documentation deployment, both release pack sequences, the sandbox proofs, and the two self-hosted standby drills — stops firing while pull-request checks keep passing, which reads as a healthy repository.
+The repository's default branch moved from `master` to `main`. Seven workflows keyed their push lane to a literal branch name, and three `ci.yml` jobs additionally guarded on `github.ref == 'refs/heads/master'`. Renaming the default branch does not rewrite those literals, so the whole push lane — post-merge CI, documentation deployment, both release pack sequences, the sandbox proofs, and the two self-hosted standby drills — would have stopped firing while pull-request checks kept passing, which reads as a healthy repository.
 
 Actions cache scoping sharpens the failure. `wine-apt-cache` and `serial-linux` exist to populate the default-branch cache scope that every pull request's job restores from. A job pinned to a branch that is no longer the default cannot serve that purpose: the branch stops receiving merges, so the job stops running, and a save from any non-default ref lands in a scope no pull request reads.
 
 ## Decision
 
-Every push-triggered workflow lists both names, `branches: [main, master]`, and the three `ci.yml` job guards accept either ref through an explicit disjunction. Both names are listed so that this change and the default-branch rename are independent events: the push lane covers whichever branch is default at any moment, in either order, with no window where nothing runs.
+Every push-triggered workflow triggers on `branches: [main]`, and the three `ci.yml` job guards compare `github.ref` against `refs/heads/main`.
+
+The trigger change and the rename shipped as separate steps. Both names were listed on all seven triggers and accepted by all three guards until `main` became the default branch, which made the two events independent: the push lane covered whichever branch was default at any moment, in either order, with no window where nothing ran. `master` left the triggers and guards once the flip completed.
 
 Comments that named `master` as the branch now name the default branch, because the branch name was never the operative fact — cache scope, merge cadence, and standby-drill frequency all follow whichever branch is default.
 
@@ -28,6 +30,8 @@ Comments that named `master` as the branch now name the default branch, because 
 
 ## Consequences
 
-The push lane fires on both branches while both exist, so a repository carrying two live branch heads runs its post-merge lanes twice. That cost is bounded by the rename: once `main` is default and `master` is deleted, `master` leaves the seven trigger lists and the three guards, and the dual listing has no remaining function. The prose that now names the default branch stays accurate through the rename and needs no further edit.
+The push lane fires on `main` alone. While both names were listed, a repository carrying two live branch heads would have run its post-merge lanes twice; that cost ended with the flip. A surviving `master` branch receives no CI, which matches its state: it receives no merges either.
+
+Workflow prose names the default branch rather than a branch name, so it stays accurate across any later rename and the next one only has to move literals.
 
 Workflows keyed to tags or to `pull_request` alone are untouched. Repository documentation still names `origin/master` where it describes external maintenance tooling; those references resolve against the branch that tooling actually fetches and are outside this change.
