@@ -1,0 +1,39 @@
+{
+  "name": "@deepseek-ai/dsh-web-frontend-nousai",
+  "description": "NousAI-branded web application entry: the apps/web shell rebuilt with NousAI page identity and NousAI brand marks served as the ui-primitives platform module; dist/ served by the dsh-nousai-web-app bundle",
+  "version": "0.1.0-rc.5",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "directory": "apps/web-nousai"
+  },
+  "type": "module",
+  "exports": {
+    "./dist/*": "./dist/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.map"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "watch": "vite build --watch"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@deepseek-ai/dsh-client-web": "workspace:^",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@deepseek-ai/dsh-client-ui-primitives": "workspace:^",
+    "@types/node": "^22.0.0",
+    "@types/react": "~18.3.1",
+    "typescript": "^6.0.3",
+    "vite": "^6.0.0"
+  }
+}

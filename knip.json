@@ -160,6 +160,16 @@
         "tests/**/*.tsx"
       ]
     },
+    "packages/client/ui-nousai-brand": {
+      "entry": [
+        "tests/**/*.spec.tsx"
+      ],
+      "project": [
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "tests/**/*.tsx"
+      ]
+    },
     "packages/client/ui-goal": {
       "entry": [
         "tests/**/*.spec.tsx"
@@ -726,6 +736,20 @@
         "react-dom"
       ]
     },
+    "apps/web-nousai": {
+      "entry": [
+        "src/brand/ui-primitives-nousai.ts"
+      ],
+      "project": [
+        "src/**/*.ts",
+        "src/**/*.tsx"
+      ],
+      "ignoreDependencies": [
+        "@types/react",
+        "react",
+        "react-dom"
+      ]
+    },
     "apps/cli": {
       "entry": [
         "tests/**/*.spec.ts",
@@ -781,6 +805,11 @@
     "packages/bundle/web-app": {
       "ignoreDependencies": [
         "@deepseek-ai/.+"
+      ]
+    },
+    "packages/bundle/nousai-web-app": {
+      "ignoreDependencies": [
+        "@deepseek-ai/dsh-client-ui-nousai-brand"
       ]
     }
   }
