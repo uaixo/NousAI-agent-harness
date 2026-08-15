@@ -1,0 +1,136 @@
+name: sync-upstream
+
+# Two hops, in order:
+#   deepseek-ai/deepseek-harness:master  ->  this fork's master  (fast-forward only: master is a pure mirror)
+#   this fork's master                   ->  this fork's main    (merge, delivered as a pull request)
+#
+# master carries no commits of its own, so hop 1 can never conflict. Every
+# NousAI change lives on main, which is where it meets upstream — hop 2 is the
+# single place a human ever resolves anything.
+#
+# Nothing here rewrites history. When hop 2 conflicts the job stops, leaves both
+# branches untouched, and files an issue naming the conflicted paths. The one
+# exception is pnpm-lock.yaml, which is regenerated rather than hand-merged:
+# upstream rewrites it dozens of times a day and a textual merge of a lockfile
+# is never the right answer.
+
+on:
+  schedule:
+    # 05:17 UTC weekly (Monday). Upstream lands ~265 commits a day, so batching a
+    # week into one resolution beats seven daily ones. Switch to '17 5 * * *' for daily.
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+env:
+  UPSTREAM_URL: https://github.com/deepseek-ai/deepseek-harness.git
+  UPSTREAM_BRANCH: master
+  SYNC_BRANCH: sync/master-to-main
+  LOCKFILE: pnpm-lock.yaml
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # All branches: both hops read refs the trigger does not name.
+          fetch-depth: 0
+          token: ${{ secrets.SYNC_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      # Reads the pinned version out of package.json's packageManager field.
+      - uses: pnpm/action-setup@v4
+
+      - name: Identify the committer
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+      - name: 'Hop 1: upstream/master -> master'
+        run: |
+          set -euo pipefail
+          git remote add upstream "$UPSTREAM_URL"
+          # This fork never pushes to deepseek-ai.
+          git remote set-url --push upstream DISABLED
+          git fetch upstream "$UPSTREAM_BRANCH"
+          git checkout -B master origin/master
+          # --ff-only IS the mirror invariant: it fails exactly when master has
+          # grown a commit of its own, which is the thing that must not happen.
+          if ! git merge --ff-only "upstream/$UPSTREAM_BRANCH"; then
+            echo "CONFLICT_STAGE=upstream/master -> master (master has diverged from upstream and is no longer a mirror)" >> "$GITHUB_ENV"
+            git log --oneline "upstream/$UPSTREAM_BRANCH..HEAD" | tee conflicts.txt
+            exit 1
+          fi
+          git push origin master
+          echo "master is level with upstream/$UPSTREAM_BRANCH."
+
+      - name: 'Hop 2: master -> main, as a pull request'
+        env:
+          GH_TOKEN: ${{ secrets.SYNC_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git fetch origin master main
+          if git merge-base --is-ancestor origin/master origin/main; then
+            echo "main already contains master - no pull request needed."
+            exit 0
+          fi
+          git checkout -B "$SYNC_BRANCH" origin/main
+          if ! git merge --no-edit origin/master; then
+            UNMERGED="$(git diff --name-only --diff-filter=U)"
+            OTHER="$(printf '%s\n' "$UNMERGED" | grep -v '^$' | grep -vx "$LOCKFILE" || true)"
+            # Regenerate the lockfile only when it is the ONLY thing in the way.
+            # Any other conflicted path is a real decision and belongs to a human.
+            if ! printf '%s\n' "$UNMERGED" | grep -qx "$LOCKFILE" || [ -n "$OTHER" ]; then
+              echo "CONFLICT_STAGE=master -> main" >> "$GITHUB_ENV"
+              printf '%s\n' "$UNMERGED" | tee conflicts.txt
+              git merge --abort
+              exit 1
+            fi
+            echo "Only $LOCKFILE conflicts - regenerating it from the merged manifests."
+            # Start from upstream's lockfile, then let pnpm re-derive the fork's
+            # own entries from the already-merged package.json files.
+            git checkout --theirs -- "$LOCKFILE"
+            # --ignore-scripts: this tree contains freshly merged upstream code
+            # and no package lifecycle script should run on the runner.
+            pnpm install --lockfile-only --ignore-scripts
+            git add "$LOCKFILE"
+            git commit --no-edit
+          fi
+          # The sync branch is bot-owned and disposable, so replacing it is safe;
+          # --force-with-lease still refuses if someone pushed to it meanwhile.
+          git push --force-with-lease origin "$SYNC_BRANCH"
+          if gh pr view "$SYNC_BRANCH" --json number >/dev/null 2>&1; then
+            echo "Existing pull request updated in place."
+          else
+            gh pr create --base main --head "$SYNC_BRANCH" \
+              --title 'sync: merge master into main' \
+              --body 'Automated by `.github/workflows/sync-upstream.yml`. Brings the upstream commits now on `master` into `main`, keeping every commit `main` carries of its own. If `pnpm-lock.yaml` was the only conflict it was regenerated with `pnpm install --lockfile-only`, not hand-merged - check that diff first.'
+          fi
+
+      - name: File an issue when a hop is stuck
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.SYNC_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          STAGE="${CONFLICT_STAGE:-an unknown stage}"
+          FILES="$(cat conflicts.txt 2>/dev/null || echo '(see the run log)')"
+          TITLE="sync: $STAGE needs a manual merge"
+          OPEN="$(gh issue list --search "$TITLE in:title" --state open --json number --jq '.[0].number // empty')"
+          if [ -n "$OPEN" ]; then
+            echo "Issue #$OPEN already tracks this."
+            exit 0
+          fi
+          gh issue create --title "$TITLE" --body "$(printf 'The scheduled sync stopped at **%s**. Both branches were left untouched.\n\n```\n%s\n```\n\nResolve locally, push, then re-run the workflow.\n\nRun: %s/%s/actions/runs/%s\n' "$STAGE" "$FILES" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID")"
