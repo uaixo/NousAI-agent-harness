@@ -1,0 +1,44 @@
+# The dsh-nousai-web-app bundle patch: NousAI product branding over the
+# dsh-web-app browser surface. Applied after the dsh-base and dsh-web-app
+# layers; rows here override those layers' rows by id, with the profile's own
+# cordis.patch.yml and any --patch overlays still to come.
+#
+# A patch replaces the targeted row's whole `config`, so each row below
+# restates every key it owns. Vendor branding (the DeepSeek LLM provider, its
+# credential names, and endpoints) is deliberately untouched: this layer
+# rebrands the product, not the model vendor.
+
+# The stock web glue serves the DeepSeek-branded shell dist and registers the
+# DeepSeek-worded prompt sections; the NousAI runtime row below replaces it
+# wholesale. Disable-then-insert rather than shadowing: the frontend-static
+# fallback seat is single-owner (a second claim throws) and is released on
+# fiber disposal.
+- id: web-runtime
+  disabled: true
+
+# Restates the web-app persona with the NousAI product name and removes the
+# fixed "powered by DeepSeek Harness" identity opener; the NousAI identity
+# rides the persona itself.
+- id: system-prompt
+  config:
+    includeHarnessIdentity: false
+    persona: >-
+      You are a coding agent of the NousAI Harness, powered by the {{model}} model. Your working directory is {{cwd}}.
+
+- insert:
+    # NousAI web glue: serves the NousAI shell dist (NousAI marks as the
+    # ui-primitives platform module, page title, favicon, PWA manifest, boot
+    # wordmark) and registers the NousAI-worded web-surface prompt section and
+    # bash runtime variable.
+    - id: nousai-web-runtime
+      name: '@deepseek-ai/dsh-nousai-web-app'
+      inject: [webStartup]
+      config:
+        printUrl: true
+        surfaceContext: true
+        trustedHosts: !!js ctx.webStartup.trustedHosts
+
+    # Browser-half branding: shadows the DeepSeek-branded internal-testing
+    # welcome notice out of the settings onboarding chain.
+    - id: ui-nousai-brand
+      name: '@deepseek-ai/dsh-client-ui-nousai-brand'

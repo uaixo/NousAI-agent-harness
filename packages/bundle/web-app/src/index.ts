@@ -106,10 +106,89 @@ function webSurfacePrompt(webUrl: string): string {
 }
 
 /** Resolve the canonical loopback URL from the active Web server. */
-function localWebUrl(ctx: Context): string {
+function localWebUrl(ctx: Context, pluginName: string): string {
   const port = ctx.get('webServer')?.port
-  if (port === undefined) throw new Error('web-app: webServer service missing while resolving Web runtime')
+  if (port === undefined) throw new Error(`${pluginName}: webServer service missing while resolving Web runtime`)
   return `http://${LOOPBACK_HOST}:${String(port)}`
+}
+
+/**
+ * The branded half of a Web runtime: what a browser-surface bundle serves and
+ * says. The stock bundle passes the DeepSeek Harness identity; a rebranding
+ * bundle (dsh-nousai-web-app) passes its own so both share
+ * {@link applyWebRuntime}'s seat and readiness mechanics without drifting.
+ */
+export interface WebRuntimeIdentity {
+  /** Plugin name used as the diagnostic prefix of runtime failures. */
+  pluginName: string
+  /** Resolve the built shell dist's index.html; read once per mount. */
+  distIndex: () => string
+  /** Register the branded harness-source prompt section against the prompt context. */
+  harnessSource: (promptCtx: Context) => void
+  /** Model-visible orientation for the surface at the resolved loopback URL. */
+  surfacePrompt: (webUrl: string) => string
+  /** Model-visible description of the `DSH_WEB_URL` bash variable. */
+  webUrlDescription: string
+}
+
+/**
+ * Mount one branded Web runtime: dist serving over the frontend-static
+ * fallback seat, the surface prompt sections, the bash runtime variable, and
+ * the Loader-settled URL line.
+ * @param ctx - plugin context carrying the webServer service.
+ * @param config - validated {@link Config}.
+ * @param identity - the mounting bundle's {@link WebRuntimeIdentity}.
+ */
+export function applyWebRuntime(ctx: Context, config: Config, identity: WebRuntimeIdentity): void {
+  const runtime = resolveLanTrust(ctx.webServer.host, config.trustedHosts)
+  // Release dependent rows only after bind-dependent trust has been sampled once.
+  ctx.provide(WEB_RUNTIME_SERVICE, runtime)
+  ctx.plugin(FrontendStatic, { distIndex: identity.distIndex() })
+  if (config.surfaceContext) {
+    ctx.inject(['systemPrompt'], (promptCtx) => {
+      identity.harnessSource(promptCtx)
+      promptCtx.systemPrompt.section({
+        name: 'app:web-surface',
+        order: -98,
+        text: () => identity.surfacePrompt(localWebUrl(promptCtx, identity.pluginName)),
+      })
+    })
+    ctx.inject(['shellEnv'], (runtimeCtx) => {
+      runtimeCtx.shellEnv.register({
+        name: 'web-runtime',
+        variables: {
+          [DSH_WEB_URL]: { description: identity.webUrlDescription },
+        },
+        resolve: () => ({ [DSH_WEB_URL]: localWebUrl(runtimeCtx, identity.pluginName) }),
+      })
+    })
+  }
+  if (config.printUrl) {
+    // The URL line is a readiness signal: supervisors (and the keyless CLI
+    // smoke) RPC as soon as they observe it, so it must not print while
+    // sibling rows (the /api route owner) are still mounting. Await Loader
+    // settlement first; a hand-built tree without a Loader prints at once.
+    const printUrl = (): void => {
+      // Reuse the exact LAN snapshot provided to the /api trust fence.
+      const lanCandidate = runtime.lanAddresses[0]
+      const port = ctx.webServer.port
+      console.log(`dsh web: ${localWebUrl(ctx, identity.pluginName)}${lanCandidate === undefined ? '' : ` (LAN: http://${lanCandidate}:${String(port)})`}`)
+    }
+    // This row's own activation can precede a sibling failure. The app owns
+    // readiness by waiting for its Loader tree, or prints at once in a
+    // hand-built context without Loader.
+    const settled = ctx.get('loader')?.await()
+    if (settled === undefined) printUrl()
+    else {
+      void settled.then(() => {
+        // The tree can be disposed while the boot was in flight (early
+        // SIGTERM); a URL line for a dead server would only mislead, and
+        // reading the torn-down port would turn a clean shutdown into a crash.
+        if (ctx.get('webServer') !== undefined) printUrl()
+      // Loader reports a failed boot; this row only stays quiet.
+      }, () => {})
+    }
+  }
 }
 
 /** Dist location is workspace knowledge of this bundle: resolved through the frontend package exports, not configured. */
@@ -133,53 +212,11 @@ export const internals: { resolveDistIndex: () => string } = { resolveDistIndex 
  * @param config - validated {@link Config}.
  */
 export function apply(ctx: Context, config: Config): void {
-  const runtime = resolveLanTrust(ctx.webServer.host, config.trustedHosts)
-  // Release dependent rows only after bind-dependent trust has been sampled once.
-  ctx.provide(WEB_RUNTIME_SERVICE, runtime)
-  ctx.plugin(FrontendStatic, { distIndex: internals.resolveDistIndex() })
-  if (config.surfaceContext) {
-    ctx.inject(['systemPrompt'], (promptCtx) => {
-      addHarnessSourceSection(promptCtx, SOURCE_ROOT)
-      promptCtx.systemPrompt.section({
-        name: 'app:web-surface',
-        order: -98,
-        text: () => webSurfacePrompt(localWebUrl(promptCtx)),
-      })
-    })
-    ctx.inject(['shellEnv'], (runtimeCtx) => {
-      runtimeCtx.shellEnv.register({
-        name: 'web-runtime',
-        variables: {
-          [DSH_WEB_URL]: { description: 'Canonical local URL of the DeepSeek Harness Web GUI serving this session.' },
-        },
-        resolve: () => ({ [DSH_WEB_URL]: localWebUrl(runtimeCtx) }),
-      })
-    })
-  }
-  if (config.printUrl) {
-    // The URL line is a readiness signal: supervisors (and the keyless CLI
-    // smoke) RPC as soon as they observe it, so it must not print while
-    // sibling rows (the /api route owner) are still mounting. Await Loader
-    // settlement first; a hand-built tree without a Loader prints at once.
-    const printUrl = (): void => {
-      // Reuse the exact LAN snapshot provided to the /api trust fence.
-      const lanCandidate = runtime.lanAddresses[0]
-      const port = ctx.webServer.port
-      console.log(`dsh web: ${localWebUrl(ctx)}${lanCandidate === undefined ? '' : ` (LAN: http://${lanCandidate}:${String(port)})`}`)
-    }
-    // This row's own activation can precede a sibling failure. The app owns
-    // readiness by waiting for its Loader tree, or prints at once in a
-    // hand-built context without Loader.
-    const settled = ctx.get('loader')?.await()
-    if (settled === undefined) printUrl()
-    else {
-      void settled.then(() => {
-        // The tree can be disposed while the boot was in flight (early
-        // SIGTERM); a URL line for a dead server would only mislead, and
-        // reading the torn-down port would turn a clean shutdown into a crash.
-        if (ctx.get('webServer') !== undefined) printUrl()
-      // Loader reports a failed boot; this row only stays quiet.
-      }, () => {})
-    }
-  }
+  applyWebRuntime(ctx, config, {
+    pluginName: name,
+    distIndex: () => internals.resolveDistIndex(),
+    harnessSource: promptCtx => void addHarnessSourceSection(promptCtx, SOURCE_ROOT),
+    surfacePrompt: webSurfacePrompt,
+    webUrlDescription: 'Canonical local URL of the DeepSeek Harness Web GUI serving this session.',
+  })
 }
