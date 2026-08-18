@@ -1,0 +1,19 @@
+{
+  "name": "dsh-profile-web",
+  "private": true,
+  "_comment": "The nousai bundle declares its siblings as workspace:^, which pnpm cannot resolve from outside the workspace. Each one is therefore linked explicitly, mirroring what a working local install ends up with.",
+  "dependencies": {
+    "@deepseek-ai/dsh-nousai-web-app": "link:/app/packages/bundle/nousai-web-app",
+    "@deepseek-ai/dsh-client-ui-nousai-brand": "link:/app/packages/client/ui-nousai-brand",
+    "@deepseek-ai/dsh-web-frontend-nousai": "link:/app/apps/web-nousai"
+  },
+  "dsh": {
+    "profile": {
+      "bundles": [
+        "@deepseek-ai/dsh-base",
+        "@deepseek-ai/dsh-web-app",
+        "@deepseek-ai/dsh-nousai-web-app"
+      ]
+    }
+  }
+}

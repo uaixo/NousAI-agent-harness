@@ -1,0 +1,37 @@
+# Build context hygiene: the source is ~70 MB, node_modules is 1.4 GB and .git
+# is 132 MB. Everything below is either rebuilt inside the image or irrelevant.
+.git
+node_modules
+**/node_modules
+**/lib
+**/*.tsbuildinfo
+apps/web/dist
+apps/web-nousai/dist
+apps/desktop/release
+dist-exe
+coverage
+.cache
+.pnpm-store
+.storages
+.sessions
+**/.sessions
+.artifacts
+.agents/worktrees
+.worktrees
+worktrees
+**/__pycache__
+.DS_Store
+.claude
+.vscode
+.idea
+
+# Not needed inside the image, and excluding them keeps a Dockerfile edit
+# from invalidating the expensive `pnpm install` layer.
+Dockerfile
+.dockerignore
+
+# Never bake credentials into the image: root .env is the documented
+# DEEPSEEK_API_KEY home (AGENTS.md § Secrets / .env) and COPY . . would
+# otherwise ship it in /app through both stages.
+.env
+.env.*
