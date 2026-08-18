@@ -6,6 +6,9 @@
 set -euo pipefail
 
 : "${DSH_HOME:=/data}"
+# host.containers.internal is Podman's host alias. Docker Desktop resolves
+# host.docker.internal instead, and Docker on Linux needs
+# `--add-host=host.containers.internal:host-gateway` — or override this URL.
 : "${LM_STUDIO_BASE_URL:=http://host.containers.internal:1234/v1}"
 : "${LM_STUDIO_MODEL:=qwen3.6-35b-a3b-mlx}"
 : "${LM_STUDIO_API_KEY:=lm-studio}"
@@ -26,7 +29,7 @@ fi
 # publishing to reach it. The profile patch is the supported route, and the
 # safety it guards is restored by publishing to loopback only on the host.
 # A patch replaces the row's whole config, so both keys are restated.
-if [ ! -s "$PROFILE/cordis.patch.yml" ] || ! grep -q 'id: webserver' "$PROFILE/cordis.patch.yml"; then
+if [ ! -s "$PROFILE/cordis.patch.yml" ]; then
   mkdir -p "$PROFILE"
   cat > "$PROFILE/cordis.patch.yml" <<'YAML'
 # Container bind. Publish with `-p 127.0.0.1:3080:3080` — never a routable interface.
@@ -61,8 +64,11 @@ YAML
 fi
 
 # Re-link the profile against this image's /app. Cheap when nothing moved, and
-# it repairs a volume seeded by an older image.
-$DSH plugin --profile web install >/dev/null 2>&1 || true
+# it repairs a volume seeded by an older image. That repair failing is exactly
+# the breakage this step exists to catch, so it stays visible in the container
+# log; boot continues because the seeded profile may still be usable as-is.
+$DSH plugin --profile web install >/dev/null \
+  || echo "WARN: profile re-link failed; continuing with the existing profile" >&2
 
 echo "NousAI harness: DSH_HOME=$DSH_HOME  model=$LM_STUDIO_MODEL  via $LM_STUDIO_BASE_URL"
 exec $DSH web "$@"

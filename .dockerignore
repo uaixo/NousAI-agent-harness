@@ -29,3 +29,9 @@ worktrees
 # from invalidating the expensive `pnpm install` layer.
 Dockerfile
 .dockerignore
+
+# Never bake credentials into the image: root .env is the documented
+# DEEPSEEK_API_KEY home (AGENTS.md § Secrets / .env) and COPY . . would
+# otherwise ship it in /app through both stages.
+.env
+.env.*
