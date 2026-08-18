@@ -1,9 +1,9 @@
-// NousAI wordmark (placeholder brand art): mark + "NousAI" letterforms + the
-// HARNESS badge plate, keeping the stock BrandWordmark's 182x24 viewBox so the
-// sidebar brand button keeps its metrics. Letterforms use the page font via
-// SVG text; final brand art should ship path letterforms so the wordmark stops
-// depending on the viewer's font stack. Ink rides currentColor; badge text is
-// knocked out in the inverted label token like stock.
+// NousAI wordmark (placeholder brand art): mark + "NousAI" letterforms,
+// keeping the stock BrandWordmark's 182x24 viewBox so the sidebar brand
+// button keeps its metrics; the area the stock HARNESS badge plate occupied
+// stays empty. Letterforms use the page font via SVG text; final brand art
+// should ship path letterforms so the wordmark stops depending on the
+// viewer's font stack. Ink rides currentColor.
 
 import type { IconProps } from '@deepseek-ai/dsh-client-ui-primitives'
 
@@ -43,16 +43,6 @@ export function NousAiWordmark({ size = 24, className }: IconProps) {
         style={{ fontFamily: 'inherit', fontSize: '15.5px', fontWeight: 650, letterSpacing: '0.2px' }}
       >
         NousAI
-      </text>
-      <rect x="96" y="5.5" width="52" height="14" rx="2" fill="currentColor" />
-      <text
-        x="122"
-        y="15.6"
-        textAnchor="middle"
-        fill="var(--dsw-alias-label-primary-inverted)"
-        style={{ fontFamily: 'inherit', fontSize: '9px', fontWeight: 700, letterSpacing: '1.6px' }}
-      >
-        HARNESS
       </text>
     </svg>
   )
