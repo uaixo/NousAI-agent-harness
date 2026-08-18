@@ -73,12 +73,21 @@ async function loadComposition(): Promise<Context> {
   return context
 }
 
-/** GET (by default) one path against the running server; returns status, content-type, and a body prefix. */
-async function request(port: number, path: string, init?: RequestInit): Promise<{ status: number; type: string | null; body: string }> {
+/** What {@link request} reports back about one response. */
+interface Probe {
+  status: number
+  type: string | null
+  cacheControl: string | null
+  body: string
+}
+
+/** GET (by default) one path against the running server; returns status, headers of interest, and a body prefix. */
+async function request(port: number, path: string, init?: RequestInit): Promise<Probe> {
   const response = await fetch(`http://127.0.0.1:${String(port)}${path}`, init)
   return {
     status: response.status,
     type: response.headers.get('content-type'),
+    cacheControl: response.headers.get('cache-control'),
     body: (await response.text()).slice(0, 80),
   }
 }
@@ -105,6 +114,9 @@ describe('real Loader composition', () => {
 
     // Unknown extension ships as octet-stream.
     expect(await request(port, '/blob.bin')).toMatchObject({ status: 200, type: 'application/octet-stream', body: 'BLOB' })
+    // Only the composed index is marked no-cache; a real file keeps whatever
+    // caching the deployment wants, which for hashed assets is the point.
+    expect((await request(port, '/blob.bin')).cacheControl).toBeNull()
 
     // `/`, the index path, and any miss all render index.html (SPA routing)
     // through the registered index taps.
@@ -114,6 +126,9 @@ describe('real Loader composition', () => {
       expect(got.status).toBe(200)
       expect(got.body).toContain('__T__')
       expect(got.body).toContain('shell')
+      // The index is composed per request, so it must always be revalidated;
+      // a heuristically cached copy pins the client to stale plugin revisions.
+      expect(got.cacheControl).toBe('no-cache')
     }
     untap()
     expect((await request(port, '/')).body).not.toContain('__T__')

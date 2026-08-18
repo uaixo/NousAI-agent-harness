@@ -68,7 +68,14 @@ export async function serveStatic(
   }
   const serveIndex = async (): Promise<void> => {
     const body = await renderIndex()
-    res.writeHead(200, { 'content-type': MIME['.html'] })
+    // `no-cache` means "cache, but revalidate", not "never store". The index is
+    // composed per request — index taps inject plugin URLs carrying their own
+    // ?rev= hashes — so a heuristically cached copy pins the client to the
+    // plugin revisions of whenever it was fetched. Without any validator or
+    // freshness header a browser is free to do exactly that, which shows up as
+    // a rebuilt shell that keeps serving its old title and old plugin set.
+    // Hashed assets under /assets are unaffected and stay cacheable.
+    res.writeHead(200, { 'content-type': MIME['.html'], 'cache-control': 'no-cache' })
     res.end(body)
   }
   if (target === distRoot || target === distIndex) {
