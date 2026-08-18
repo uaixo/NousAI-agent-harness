@@ -14,6 +14,10 @@ permissions:
 jobs:
   policy:
     name: Issue policy
+    # The policy script reads .github/issue-management/config.json, which names
+    # the upstream repository; on any other repository (this fork included)
+    # its API calls 404 before evaluating anything, so the job runs only there.
+    if: github.repository == 'deepseek-harness/deepseek-harness'
     runs-on: ubuntu-latest
     steps:
       - name: Check out trusted policy
