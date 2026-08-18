@@ -67,6 +67,17 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # DSH_HOME holds settings, sessions and the installed profile. Mount a volume
 # here or every session dies with the container.
+#
+# On an SELinux-enforcing host — which includes the Fedora CoreOS VM that
+# `podman machine` runs — mount it with the `:Z` suffix:
+#
+#   -v nousai-data:/data:Z
+#
+# Without it, a *second* container reusing an existing volume gets a different
+# MCS category than the one that populated it and the entrypoint dies on
+# "cp: cannot stat '/data/.': Permission denied", even though `ls -ld /data`
+# succeeds. The first run against a fresh volume works, so this only appears
+# on the first rebuild.
 ENV DSH_HOME=/data \
     NODE_ENV=production
 VOLUME ["/data"]
