@@ -31,6 +31,8 @@ export const name = 'nousai-web-app'
 /* jscpd:ignore-start */
 /** Plugin config: the stock web glue's deployment fields, owned per-plugin for the config catalog. */
 export interface Config {
+  /** Permit default-browser handoff after the Loader tree settles; an SSH launch suppresses it. */
+  openBrowser: boolean
   /** Print the URL line on activation; a non-interactive layer can turn it off. */
   printUrl: boolean
   /**
@@ -45,6 +47,7 @@ export interface Config {
 }
 
 export const Config: z<Config> = z.object({
+  openBrowser: z.boolean().default(true),
   printUrl: z.boolean().default(true),
   surfaceContext: z.boolean().default(true),
   trustedHosts: z.array(String).default([]),
