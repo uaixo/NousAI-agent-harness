@@ -1,13 +1,13 @@
 /**
  * @deepseek-ai/dsh-host-frontend-static — SPA dist server over the webserver
- * fallback seat: serves the built frontend directory with the semantics the
- * Web shell locked at step1 — traversal outside the dist root is 403, any
- * miss falls back to index.html with HTTP 200 (SPA routing), unknown
- * extensions ship as octet-stream, non-GET/HEAD is 405. Every index response
- * runs through the webserver's registered index taps (boot-manifest
- * injection). The dist location is workspace knowledge of the composing
- * application, so `distIndex` is typically supplied through a `!!js`
- * expression, never hardcoded by a deployment.
+ * fallback seat: serves the built frontend directory with explicit index
+ * entry points. A readable index renders at the dist root and configured index
+ * path; missing paths return 404, traversal outside the dist root is 403,
+ * unknown extensions ship as octet-stream, and non-GET/HEAD is 405. Every
+ * index response runs through the webserver's index render (structured
+ * injection rows, then raw taps). The dist location is workspace knowledge of
+ * the composing application, so `distIndex` is typically supplied through a
+ * `!!js` expression, never hardcoded by a deployment.
  * @module @deepseek-ai/dsh-host-frontend-static
  */
 
@@ -34,8 +34,10 @@ export const Config: z<Config> = z.object({
   distIndex: z.string().required(),
 })
 
+const HTML_MIME = 'text/html; charset=utf-8'
+
 const MIME: Record<string, string> = {
-  '.html': 'text/html; charset=utf-8',
+  '.html': HTML_MIME,
   '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.svg': 'image/svg+xml',
@@ -44,14 +46,20 @@ const MIME: Record<string, string> = {
   '.webmanifest': 'application/manifest+json',
 }
 
+const STATIC_MISS_CODES: ReadonlySet<string | undefined> = new Set([
+  'ENOENT',
+  'EISDIR',
+  'ENOTDIR',
+])
+
 /**
  * Serve one GET/HEAD static request from the dist root.
  * @param pathname - decoded URL pathname of the request.
  * @param res - the node:http response to write.
  * @param distRoot - absolute dist root directory (resolved by the caller).
  * @param distIndex - absolute path of index.html inside distRoot.
- * @param renderIndex - produces the index.html body (index-tap injection) for
- * `/` and every SPA fallback.
+ * @param renderIndex - produces the index.html body (structured injection
+ * rendering) for the dist root and configured index path.
  */
 export async function serveStatic(
   pathname: string, res: ServerResponse, distRoot: string, distIndex: string,
@@ -66,30 +74,37 @@ export async function serveStatic(
     res.end()
     return
   }
-  const serveIndex = async (): Promise<void> => {
-    const body = await renderIndex()
-    // `no-cache` means "cache, but revalidate", not "never store". The index is
-    // composed per request — index taps inject plugin URLs carrying their own
-    // ?rev= hashes — so a heuristically cached copy pins the client to the
-    // plugin revisions of whenever it was fetched. Without any validator or
-    // freshness header a browser is free to do exactly that, which shows up as
-    // a rebuilt shell that keeps serving its old title and old plugin set.
-    // Hashed assets under /assets are unaffected and stay cacheable.
-    res.writeHead(200, { 'content-type': MIME['.html'], 'cache-control': 'no-cache' })
-    res.end(body)
-  }
-  if (target === distRoot || target === distIndex) {
-    await serveIndex()
+  let body: string | Buffer
+  let type: string
+  let composed = false
+  try {
+    if (target === distRoot || target === distIndex) {
+      body = await renderIndex()
+      type = HTML_MIME
+      composed = true
+    } else {
+      body = await readFile(target)
+      type = MIME[extname(target)] ?? 'application/octet-stream'
+    }
+  } catch (error) {
+    // Only absent or non-file targets are 404; other filesystem failures reach
+    // the webserver's request-failure handling.
+    if (!STATIC_MISS_CODES.has((error as NodeJS.ErrnoException).code)) throw error
+    res.writeHead(404)
+    res.end()
     return
   }
-  try {
-    const body = await readFile(target)
-    res.writeHead(200, { 'content-type': MIME[extname(target)] ?? 'application/octet-stream' })
-    res.end(body)
-  } catch {
-    // Miss (ENOENT/EISDIR) falls back to index.html with 200 (SPA routing).
-    await serveIndex()
-  }
+  // `no-cache` means "cache, but revalidate", not "never store". The index is
+  // composed per request — index taps inject plugin URLs carrying their own
+  // ?rev= hashes — so a heuristically cached copy pins the client to the
+  // plugin revisions of whenever it was fetched. Without any validator or
+  // freshness header a browser is free to do exactly that, which shows up as
+  // a rebuilt shell that keeps serving its old title and old plugin set.
+  // Hashed assets under /assets are unaffected and stay cacheable.
+  res.writeHead(200, composed
+    ? { 'content-type': type, 'cache-control': 'no-cache' }
+    : { 'content-type': type })
+  res.end(body)
 }
 
 /**
@@ -101,7 +116,7 @@ export function apply(ctx: Context, config: Config): void {
   const distIndex = config.distIndex
   const distRoot = dirname(distIndex)
   const renderIndex = async (): Promise<string> =>
-    ctx.webServer.applyIndexTaps(await readFile(distIndex, 'utf8'))
+    ctx.webServer.renderIndex(await readFile(distIndex, 'utf8'))
   ctx.effect(() => ctx.webServer.registerFallback(async (req, res) => {
     // Non-GET/HEAD without a matching named route is 405 (fallback-only
     // semantics: named routes own their method handling).
