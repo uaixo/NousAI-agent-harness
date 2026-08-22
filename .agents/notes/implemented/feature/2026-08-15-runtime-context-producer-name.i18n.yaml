@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-15-runtime-context-producer-name.md
 2026-08-15-runtime-context-producer-name.md: ba8ed78aafea939c95f730196de40a2c11ee44e9
-2026-08-15-runtime-context-producer-name.zh.md: 143123c18c4d32fd0d0d2b046db045bb350fb281
+2026-08-15-runtime-context-producer-name.zh.md: 6507d4c42fa7e4d59dc5ec53b72ee88db0a01c6a

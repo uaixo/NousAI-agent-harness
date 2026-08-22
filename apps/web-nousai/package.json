@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-web-frontend-nousai",
   "description": "NousAI-branded web application entry: the apps/web shell rebuilt with NousAI page identity and NousAI brand marks served as the ui-primitives platform module; dist/ served by the dsh-nousai-web-app bundle",
-  "version": "0.1.0-rc.8",
+  "version": "0.1.1-rc.2",
   "publishConfig": {
     "access": "public"
   },
