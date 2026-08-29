@@ -16,6 +16,13 @@
 - id: web-runtime
   disabled: true
 
+# The official-brand row fills the same single-kind browser brand slots this
+# layer's ui-nousai-brand occupants claim; under an official-profile client
+# build both would register at the same priority and the slot registry throws
+# on the loser. The NousAI layer replaces the official occupants outright.
+- id: ui-brand-official
+  disabled: true
+
 # Restates the web-app persona with the NousAI product name and removes the
 # fixed "powered by DeepSeek Harness" identity opener; the NousAI identity
 # rides the persona itself.
@@ -39,7 +46,8 @@
         surfaceContext: true
         trustedHosts: !!js ctx.webStartup.trustedHosts
 
-    # Browser-half branding: shadows the DeepSeek-branded internal-testing
-    # welcome notice out of the settings onboarding chain.
+    # Browser-half branding: fills the sidebar/hero brand slots with the
+    # NousAI marks and shadows the DeepSeek-branded internal-testing welcome
+    # notice out of the settings onboarding chain.
     - id: ui-nousai-brand
       name: '@deepseek-ai/dsh-client-ui-nousai-brand'

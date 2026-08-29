@@ -13,6 +13,7 @@
  */
 
 import { createRequire } from 'node:module'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
@@ -20,7 +21,7 @@ import { HARNESS_SOURCE_SECTION } from '@deepseek-ai/dsh-app-boot'
 import { applyWebRuntime } from '@deepseek-ai/dsh-web-app'
 import type {} from '@deepseek-ai/cordis-plugin-loader'
 import type {} from '@deepseek-ai/dsh-host-webserver'
-import type {} from '@deepseek-ai/dsh-system-prompt'
+import { FIRST_PARTY_SECTION_ORDER } from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-shell-env'
 
 /** Stable Cordis plugin name. */
@@ -78,19 +79,24 @@ function webSurfacePrompt(webUrl: string): string {
 function addNousAiSourceSection(promptCtx: Context): void {
   promptCtx.systemPrompt.section({
     name: HARNESS_SOURCE_SECTION,
-    order: -99,
+    order: FIRST_PARTY_SECTION_ORDER.HARNESS_SOURCE,
     text: `The NousAI Harness implementation checkout is at ${SOURCE_ROOT}. The checkout location and current working directory are separate values and may differ; never infer the working directory from this path. Use pwd to determine the current working directory. Use this checkout only to inspect or extend the harness itself.`,
   })
 }
 
-/** Dist location is workspace knowledge of this bundle: resolved through the NousAI frontend package exports, not configured. */
+/**
+ * Dist location is workspace knowledge of this bundle: anchored on the
+ * NousAI frontend package manifest, not configured. Existence is a
+ * request-time concern — the fallback owner reads files per request, so a
+ * composition boots before `pnpm run build:web:nousai` has produced a dist.
+ */
 function resolveDistIndex(): string {
   const require = createRequire(import.meta.url)
   try {
-    return require.resolve('@deepseek-ai/dsh-web-frontend-nousai/dist/index.html')
+    return join(dirname(require.resolve('@deepseek-ai/dsh-web-frontend-nousai/package.json')), 'dist', 'index.html')
   } catch {
-    /* v8 ignore next 2 -- reachable only on a checkout without a built NousAI dist; the test tree stages one */
-    throw new Error('nousai-web-app: NousAI frontend dist not built; run pnpm run build:web:nousai from the repository root first')
+    /* v8 ignore next 2 -- reachable only when the NousAI frontend package is absent from the checkout */
+    throw new Error('nousai-web-app: @deepseek-ai/dsh-web-frontend-nousai is not resolvable from this composition')
   }
 }
 

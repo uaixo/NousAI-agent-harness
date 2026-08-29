@@ -7,19 +7,27 @@
 
 import type { IconProps } from '@deepseek-ai/dsh-client-ui-primitives'
 
+/** Display options for the NousAI brand wordmark. */
+export interface NousAiWordmarkProps extends IconProps {
+  /** Whether to include the leading N mark; defaults to true. */
+  includeMark?: boolean | undefined
+}
+
 /**
  * Render the full NousAI brand wordmark.
- * @param props.size - height in px (default 24; width keeps the 182:24 ratio).
+ * @param props.size - height in px (default 24; width follows the selected artwork).
  * @param props.className - extra class for layout placement.
+ * @param props.includeMark - whether to include the leading N mark.
  * @returns the wordmark svg (aria-hidden decorative brand art).
  */
-export function NousAiWordmark({ size = 24, className }: IconProps) {
+export function NousAiWordmark({ size = 24, className, includeMark = true }: NousAiWordmarkProps) {
+  const width = includeMark ? 182 : 156
   return (
     <svg
-      width={(size * 182) / 24}
+      width={(size * width) / 24}
       height={size}
       className={className}
-      viewBox="0 0 182 24"
+      viewBox={includeMark ? '0 0 182 24' : '26 0 156 24'}
       fill="none"
       aria-hidden="true"
     >

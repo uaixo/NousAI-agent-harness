@@ -10,7 +10,8 @@
 import { Context } from '@deepseek-ai/cordis'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render } from '@testing-library/react'
-import { SlotRegistry } from '@deepseek-ai/dsh-client-runtime/client'
+import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
+import { NousAiBrandMark, NousAiBrandName } from '../src/client/Brand.tsx'
 import { NousAiWelcomeSkip } from '../src/client/NousAiWelcomeSkip.tsx'
 import { apply, inject } from '../src/client/index.ts'
 import { apply as nodeApply } from '../src/index.ts'
@@ -29,7 +30,12 @@ async function bench() {
   await ctx.plugin(SlotRegistry).await()
   ctx.slots.register({
     name: 'root',
-    children: { 'settings.onboarding': { kind: 'list', scope: 'root' } },
+    children: {
+      'settings.onboarding': { kind: 'list', scope: 'root' },
+      'sidebar.brand.mark': { kind: 'single', scope: 'root' },
+      'sidebar.brand.name': { kind: 'single', scope: 'root' },
+      'conversation.hero.brand.mark': { kind: 'single', scope: 'root' },
+    },
   } as never, (() => null) as never)
   ctx.slots.register({
     name: 'settings.onboarding',
@@ -40,7 +46,8 @@ async function bench() {
     const entries = ctx.slots.entriesOfSlot('settings.onboarding')
     return entries.find(entry => (entry.options as { id?: string }).id === 'welcome-notice')
   }
-  return { ctx, winner }
+  const occupant = (slot: 'sidebar.brand.mark' | 'sidebar.brand.name' | 'conversation.hero.brand.mark') => ctx.slots.entriesOfSlot(slot)[0]?.component
+  return { ctx, winner, occupant }
 }
 
 describe('ui-nousai-brand browser plugin', () => {
@@ -55,6 +62,22 @@ describe('ui-nousai-brand browser plugin', () => {
 
     await fiber.dispose()
     expect(b.winner()?.component).toBe(StockNotice)
+  })
+
+  it('fills the three brand slots and empties them on disposal', async () => {
+    const b = await bench()
+    expect(b.occupant('sidebar.brand.mark')).toBeUndefined()
+
+    const fiber = b.ctx.plugin({ inject: [...inject], apply })
+    await fiber.await()
+    expect(b.occupant('sidebar.brand.mark')).toBe(NousAiBrandMark)
+    expect(b.occupant('sidebar.brand.name')).toBe(NousAiBrandName)
+    expect(b.occupant('conversation.hero.brand.mark')).toBe(NousAiBrandMark)
+
+    await fiber.dispose()
+    expect(b.occupant('sidebar.brand.mark')).toBeUndefined()
+    expect(b.occupant('sidebar.brand.name')).toBeUndefined()
+    expect(b.occupant('conversation.hero.brand.mark')).toBeUndefined()
   })
 
   it('completes the coordinator step once and renders nothing', () => {

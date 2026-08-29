@@ -15,7 +15,16 @@
       "path": "../../runtime-diagnostics/invariants"
     },
     {
-      "path": "../runtime"
+      "path": "../ui-conversation"
+    },
+    {
+      "path": "../ui-primitives"
+    },
+    {
+      "path": "../ui-renderer"
+    },
+    {
+      "path": "../ui-sidebar"
     },
     {
       "path": "../ui-settings"
