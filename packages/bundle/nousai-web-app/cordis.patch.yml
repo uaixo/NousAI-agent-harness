@@ -39,7 +39,8 @@
         surfaceContext: true
         trustedHosts: !!js ctx.webStartup.trustedHosts
 
-    # Browser-half branding: shadows the DeepSeek-branded internal-testing
-    # welcome notice out of the settings onboarding chain.
+    # Browser-half branding: fills the sidebar/hero brand slots with the
+    # NousAI marks and shadows the DeepSeek-branded internal-testing welcome
+    # notice out of the settings onboarding chain.
     - id: ui-nousai-brand
       name: '@deepseek-ai/dsh-client-ui-nousai-brand'

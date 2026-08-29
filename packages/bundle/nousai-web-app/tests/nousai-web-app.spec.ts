@@ -66,6 +66,21 @@ function provideLoader(ctx: Context, settle: () => Promise<void> = async () => {
   ctx.provide('loader', { await: settle } as never)
 }
 
+/** A fake Connection issuing deterministic process-token URLs (the announce waits on it). */
+function provideConnection(ctx: Context): void {
+  ctx.provide('connection', {
+    authenticatedUrl(baseUrl: string) {
+      const url = new URL(baseUrl)
+      url.pathname = '/'
+      url.searchParams.set('token', 'test-token')
+      return url.href
+    },
+    authorizeIndex: () => true,
+    requestRejection: () => undefined,
+    rpc: {},
+  } as never)
+}
+
 interface BashContribution {
   name: string
   variables: Record<string, { description: string }>
@@ -78,6 +93,7 @@ describe('nousai-web-app runtime glue', () => {
     const ctx = new Context()
     const { server, seat } = fakeHttpServer('0.0.0.0')
     ctx.provide('webServer', server)
+    provideConnection(ctx)
     const contributions: BashContribution[] = []
     ctx.provide('shellEnv', {
       register: (contribution: BashContribution) => {
@@ -97,7 +113,7 @@ describe('nousai-web-app runtime glue', () => {
       lanAddresses: ['192.168.1.5'],
       trustedHosts: ['192.168.1.5', 'lab.internal'],
     })
-    expect(log).toHaveBeenCalledWith('dsh web: http://127.0.0.1:4567 (LAN: http://192.168.1.5:4567)')
+    expect(log).toHaveBeenCalledWith('dsh web: http://127.0.0.1:4567/?token=test-token (LAN: http://192.168.1.5:4567/?token=test-token)')
     const assembly = await ctx.systemPrompt.assemble()
     const source = assembly.sections.find(entry => entry.name === 'harness:source')?.text
     expect(source).toContain('NousAI Harness implementation checkout')
@@ -155,10 +171,11 @@ describe('nousai-web-app runtime glue', () => {
     stageDist()
     const ctx = new Context()
     ctx.provide('webServer', fakeHttpServer().server)
+    provideConnection(ctx)
     const log = vi.spyOn(console, 'log').mockImplementation(() => {})
     apply(ctx, new Config({ openBrowser: false, printUrl: true, surfaceContext: true, trustedHosts: [] }))
     await new Promise(resolve => setTimeout(resolve, 0))
-    expect(log).toHaveBeenCalledWith('dsh web: http://127.0.0.1:4567')
+    expect(log).toHaveBeenCalledWith('dsh web: http://127.0.0.1:4567/?token=test-token')
     await ctx.fiber.dispose()
   })
 
@@ -168,6 +185,7 @@ describe('nousai-web-app runtime glue', () => {
     // RPC immediately after observing it.
     const settled = new Context()
     settled.provide('webServer', fakeHttpServer().server)
+    provideConnection(settled)
     let release: () => void
     const settlement = new Promise<void>((resolve) => { release = resolve })
     provideLoader(settled, () => settlement)
@@ -177,7 +195,7 @@ describe('nousai-web-app runtime glue', () => {
     expect(log).not.toHaveBeenCalled()
     release!()
     await new Promise(resolve => setTimeout(resolve, 0))
-    expect(log).toHaveBeenCalledWith('dsh web: http://127.0.0.1:4567')
+    expect(log).toHaveBeenCalledWith('dsh web: http://127.0.0.1:4567/?token=test-token')
     await settled.fiber.dispose()
 
     // Failed path: Loader reports the sibling failure; the app prints no URL
@@ -185,6 +203,7 @@ describe('nousai-web-app runtime glue', () => {
     log.mockClear()
     const failed = new Context()
     failed.provide('webServer', fakeHttpServer().server)
+    provideConnection(failed)
     provideLoader(failed, async () => { throw new Error('boot failed') })
     apply(failed, new Config({ openBrowser: false, printUrl: true, surfaceContext: true, trustedHosts: [] }))
     await new Promise(resolve => setTimeout(resolve, 0))
@@ -195,6 +214,7 @@ describe('nousai-web-app runtime glue', () => {
     // line, no crash.
     log.mockClear()
     const torn = new Context()
+    provideConnection(torn)
     const child = torn.plugin((childCtx: Context) => {
       childCtx.provide('webServer', fakeHttpServer().server)
     })

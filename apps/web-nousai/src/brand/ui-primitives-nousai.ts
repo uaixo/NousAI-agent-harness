@@ -11,3 +11,4 @@
 export * from '../../../../packages/client/ui-primitives/src/index.ts'
 export { NousAiLogo as FishLogo } from './NousAiLogo.tsx'
 export { NousAiWordmark as BrandWordmark } from './NousAiWordmark.tsx'
+export type { NousAiWordmarkProps as BrandWordmarkProps } from './NousAiWordmark.tsx'
