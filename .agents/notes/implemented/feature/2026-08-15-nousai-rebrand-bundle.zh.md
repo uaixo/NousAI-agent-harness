@@ -12,7 +12,7 @@ Status: implemented
 
 换牌落地为一个可安装的补丁层 bundle，`@deepseek-ai/dsh-nousai-web-app`，覆盖三个接缝：
 
-- **外壳替换。** `apps/web-nousai`（`@deepseek-ai/dsh-web-frontend-nousai`）以 NousAI 页面身份重建原外壳，并且——承重的一步——通过构建期别名把 NousAI 标识作为 `@deepseek-ai/dsh-client-ui-primitives` 平台模块提供，因此所有直接消费者都解析到同一份 NousAI 图形、无需 fork 任何 UI 插件；侧栏字标与对话主视觉标识经由通用浏览器品牌插槽渲染，由 `dsh-client-ui-nousai-brand` 用基于同一模块的占位者填充。内核启动页的 `HARNESS` 字面量由构建 transform 替换，因为它刻意位于一切插件接缝之外（外壳自足规则）。bundle 的胶水停用原 `web-runtime` 行，并以 NousAI dist 与措辞挂载 `applyWebRuntime`——已提取进 `dsh-web-app`、按品牌身份参数化的共享助手。
+- **外壳替换。** `apps/web-nousai`（`@deepseek-ai/dsh-web-frontend-nousai`）以 NousAI 页面身份重建原外壳，并且——承重的一步——通过构建期别名把 NousAI 标识作为 `@deepseek-ai/dsh-client-ui-primitives` 平台模块提供，因此所有直接消费者都解析到同一份 NousAI 图形、无需 fork 任何 UI 插件；侧栏字标与对话主视觉标识经由通用浏览器品牌插槽渲染，由 `dsh-client-ui-nousai-brand` 用基于同一模块的占位者填充。内核启动页的 `HARNESS` 字面量由构建 transform 替换，因为它刻意位于一切插件接缝之外（外壳自足规则）。bundle 的补丁停用原 `web-runtime` 与 `ui-brand-official` 行（官方占位者会与 NousAI 占位者争抢单一型品牌插槽），其胶水以 NousAI dist 与措辞挂载 `applyWebRuntime`——已提取进 `dsh-web-app`、按品牌身份参数化的共享助手。
 - **引导遮蔽。** `@deepseek-ai/dsh-client-ui-nousai-brand` 以优先级 −1 遮蔽 `settings.onboarding` 单元 id `welcome-notice`，替换为立即完成的步骤：该部署不出货 DeepSeek 品牌的内测须知，插件卸载时原条目自动回归。
 - **模型可见身份。** 补丁以 `includeHarnessIdentity: false` 加 NousAI 角色设定重述 `system-prompt` 行；胶水注册 NousAI 措辞的 `harness:source` / `app:web-surface` 段与 `DSH_WEB_URL` 描述。
 
@@ -32,7 +32,7 @@ Status: implemented
 
 - `dsh plugin --profile web add @deepseek-ai/dsh-nousai-web-app` 即可完整换牌一个 profile；移除 bundle 即恢复原品牌。两个外壳共用同一 vite 配置（`apps/web-nousai` 导入 `apps/web` 的），外壳变更不会在品牌间漂移。
 - `dsh-web-app` 中共享的 `applyWebRuntime` 现在是 web-runtime 席位/就绪机制的唯一所有者；第三个品牌只需一个身份对象加一个 dist。
-- NousAI dist 是第二个前端构建（`pnpm run build:web:nousai`），刻意不并入 `pnpm run build`：可选项不进默认出货，代价是未构建时激活报错并给出构建提示。
+- NousAI dist 是第二个前端构建（`pnpm run build:web:nousai`），刻意不并入 `pnpm run build`：可选项不进默认出货，代价是构建运行之前页面按请求返回 404（启动时没有提示）。
 - 标识为占位稿（SVG text 字形）；正式 NousAI 资产直接放入 `apps/web-nousai/src/brand/`，无需改动其它任何东西。
 
 ## Testing

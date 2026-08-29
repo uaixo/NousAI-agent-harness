@@ -9,7 +9,7 @@ kind: "package-bundle"
 
 ## 概述
 
-Web profile 从本层获得 NousAI 产品身份：带页面标题、favicon、PWA manifest、启动页字标与 NousAI 品牌标识的 NousAI 外壳 dist，加上点名 NousAI Harness 的模型可见角色设定——且不 fork 任何 UI 插件。没有内置 profile 包含它；一条 `dsh plugin` 命令即可将其叠加到原生 `web` profile 之上，用同一命令移除即可回到 DeepSeek 品牌。必须先构建 NousAI dist（`pnpm run build:web:nousai`）；缺失时激活会带该提示直接报错。供应商品牌刻意保持不动：DeepSeek LLM 提供方名称、`DEEPSEEK_API_KEY`、端点与模型名描述的是模型供应商而非产品。
+Web profile 从本层获得 NousAI 产品身份：带页面标题、favicon、PWA manifest、启动页字标与 NousAI 品牌标识的 NousAI 外壳 dist，加上点名 NousAI Harness 的模型可见角色设定——且不 fork 任何 UI 插件。没有内置 profile 包含它；一条 `dsh plugin` 命令即可将其叠加到原生 `web` profile 之上，用同一命令移除即可回到 DeepSeek 品牌。NousAI dist 由 `pnpm run build:web:nousai` 产出；组合缺少它也能启动，GUI 在 dist 存在之前按请求返回 404。供应商品牌刻意保持不动：DeepSeek LLM 提供方名称、`DEEPSEEK_API_KEY`、端点与模型名描述的是模型供应商而非产品。
 
 ## 目录
 
@@ -32,7 +32,7 @@ dsh plugin --profile web add @deepseek-ai/dsh-nousai-web-app
 dsh plugin --profile web remove @deepseek-ai/dsh-nousai-web-app
 ```
 
-reconcile 步骤把本包的 [`cordis.patch.yml`](cordis.patch.yml) 作为一层激活在 `dsh-base` 与 `dsh-web-app` 层之上；没有该补丁声明的包会作为普通插件行安装。先在 checkout 中用 `pnpm run build:web:nousai` 构建 NousAI dist——否则运行时行在激活时会带该构建提示直接报错。
+reconcile 步骤把本包的 [`cordis.patch.yml`](cordis.patch.yml) 作为一层激活在 `dsh-base` 与 `dsh-web-app` 层之上；没有该补丁声明的包会作为普通插件行安装。dist 是否存在是请求时的关切：组合可以在 `pnpm run build:web:nousai` 产出 dist 之前启动，页面在 checkout 中运行该构建之前按请求返回 404。
 
 ### 你会得到什么
 
@@ -46,13 +46,13 @@ GUI 提供 NousAI 外壳：页面外观、启动页字标、以及侧边栏与�
 <details>
 <summary>实现内部——点击展开</summary>
 
-补丁停用原生 `web-runtime` 行（frontend-static 回退席位是单一所有者，因此采用停用后插入而非遮蔽），插入本包的 `nousai-web-runtime` 胶水与 `ui-nousai-brand` 浏览器行，并以 `includeHarnessIdentity: false` 加 NousAI 角色设定重述 `system-prompt` 行。胶水插件以 `@deepseek-ai/dsh-web-frontend-nousai` 包 manifest 为锚解析 NousAI 外壳 dist——这是本 bundle 的工作区知识，绝非用户配置——并以 NousAI 身份挂载 [`dsh-web-app`](../web-app/README.zh.md) 导出的共享 `applyWebRuntime` 胶水：dist 服务、NousAI 措辞的 `harness:source` 与 `app:web-surface` 提示词段、`DSH_WEB_URL` bash 变量、URL 行、以及默认浏览器交接。席位与就绪机制位于共享胶水中，因此两个运行时不会漂移。
+补丁停用原生 `web-runtime` 行（frontend-static 回退席位是单一所有者，因此采用停用后插入而非遮蔽）与 `ui-brand-official` 行（其官方构建下的占位者会与本层的 NousAI 占位者争抢单一型品牌插槽），插入本包的 `nousai-web-runtime` 胶水与 `ui-nousai-brand` 浏览器行，并以 `includeHarnessIdentity: false` 加 NousAI 角色设定重述 `system-prompt` 行。胶水插件以 `@deepseek-ai/dsh-web-frontend-nousai` 包 manifest 为锚解析 NousAI 外壳 dist——这是本 bundle 的工作区知识，绝非用户配置——并以 NousAI 身份挂载 [`dsh-web-app`](../web-app/README.zh.md) 导出的共享 `applyWebRuntime` 胶水：dist 服务、NousAI 措辞的 `harness:source` 与 `app:web-surface` 提示词段、`DSH_WEB_URL` bash 变量、URL 行、以及默认浏览器交接。席位与就绪机制位于共享胶水中，因此两个运行时不会漂移。
 
 ### 源码地图
 
 | 文件 | 角色 |
 |---|---|
-| [`cordis.patch.yml`](cordis.patch.yml) | 补丁：停用的原生运行时行、重述的 NousAI 角色设定、插入的运行时与品牌行 |
+| [`cordis.patch.yml`](cordis.patch.yml) | 补丁：停用的原生运行时行与官方品牌行、重述的 NousAI 角色设定、插入的运行时与品牌行 |
 | [`src/index.ts`](src/index.ts) | `nousai-web-runtime` 胶水插件：dist 解析与 NousAI `applyWebRuntime` 身份 |
 | [`src/invariant.ts`](src/invariant.ts) | 不变量伴随：无运行时不变量；每项贡献都随注册表释放 |
 | [`tests/nousai-web-app.spec.ts`](tests/nousai-web-app.spec.ts) | dist 解析、提示词段、URL 行就绪、花名册身份 |
@@ -97,7 +97,7 @@ GUI 提供 NousAI 外壳：页面外观、启动页字标、以及侧边栏与�
 
 以下是换牌层当前的约束，不是任务清单。
 
-- **必须先构建 NousAI 前端 dist**——激活时 `require.resolve('@deepseek-ai/dsh-web-frontend-nousai/dist/index.html')` 失败即报错并提示 `pnpm run build:web:nousai`；没有源码直出回退，也不会回退到原 dist。
+- **未构建的 NousAI dist 表现为请求时 404，而非启动失败**——解析器锚定 `@deepseek-ai/dsh-web-frontend-nousai` 的 manifest 而不检查 dist，组合照常启动，页面在 `pnpm run build:web:nousai` 运行之前按请求返回 404；没有源码直出回退，也不会回退到原 dist。
 - **品牌图形为占位稿**——`apps/web-nousai/src/brand/` 中的 NousAI 标识用 SVG text 以页面字体绘制字标字形；正式品牌资产应改为路径字形。
 - **该组合尚无免密钥 web 快照场景**——组装后的 NousAI GUI 目前由单元用例与手动组合启动验证；在 `apps/web` 快照场景中叠加本 bundle 的工作暂缓。
 

@@ -245,16 +245,14 @@ describe('nousai-web-app runtime glue', () => {
     await ctx.fiber.dispose()
   })
 
-  it('resolves the real built NousAI frontend dist through the package exports, failing loud unbuilt', () => {
-    // The production resolver (not the test hook). A built checkout resolves
-    // the NousAI frontend package's index.html; a dist-less one (the CI
-    // coverage lane runs before any build) must fail with the build hint,
-    // never a silent fallback or the stock frontend.
-    try {
-      expect(originalResolve()).toMatch(/web-nousai[/\\]dist[/\\]index\.html$/)
-    } catch (error) {
-      expect((error as Error).message).toContain('NousAI frontend dist not built')
-    }
+  it('resolves the NousAI frontend dist anchor through the package manifest on any checkout', () => {
+    // The production resolver (not the test hook): the anchor resolves on any
+    // checkout, built or not — dist existence is the fallback owner's
+    // request-time concern, so a dist-less composition (the CI coverage lane
+    // runs before any build) boots and the page 404s until
+    // `pnpm run build:web:nousai` produces the dist, never a silent fallback
+    // to the stock frontend.
+    expect(originalResolve()).toMatch(/web-nousai[/\\]dist[/\\]index\.html$/)
   })
 
   it('exports the roster identity and the invariant companion registers ownership', async () => {
