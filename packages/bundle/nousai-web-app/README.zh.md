@@ -54,7 +54,7 @@ GUI 提供 NousAI 外壳：页面外观、启动页字标、以及侧边栏与�
 |---|---|
 | [`cordis.patch.yml`](cordis.patch.yml) | 补丁：停用的原生运行时行与官方品牌行、重述的 NousAI 角色设定、插入的运行时与品牌行 |
 | [`src/index.ts`](src/index.ts) | `nousai-web-runtime` 胶水插件：dist 解析与 NousAI `applyWebRuntime` 身份 |
-| [`src/invariant.ts`](src/invariant.ts) | 不变量伴随：无运行时不变量；每项贡献都随注册表释放 |
+| — | 不发布运行时不变量伴随入口：每项贡献（frontend-static 子插件、提示词段、bash 变量）都随 fiber 由注册表释放，本 bundle 自身不持有可审计的可变状态 |
 | [`tests/nousai-web-app.spec.ts`](tests/nousai-web-app.spec.ts) | dist 解析、提示词段、URL 行就绪、花名册身份 |
 
 </details>

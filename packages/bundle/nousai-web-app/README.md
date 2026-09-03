@@ -54,7 +54,7 @@ The patch disables the stock `web-runtime` row (the frontend-static fallback sea
 |---|---|
 | [`cordis.patch.yml`](cordis.patch.yml) | The patch: disabled stock runtime and official-brand rows, restated NousAI persona, inserted runtime and brand rows |
 | [`src/index.ts`](src/index.ts) | The `nousai-web-runtime` glue plugin: dist resolution and the NousAI `applyWebRuntime` identity |
-| [`src/invariant.ts`](src/invariant.ts) | Invariant companion: no runtime invariant; every contribution is registry-disposed |
+| — | No runtime invariant companion is published: every contribution (the frontend-static child plugin, the prompt sections, the bash variable) is registry-disposed with the fiber, and this bundle holds no mutable state of its own to audit |
 | [`tests/nousai-web-app.spec.ts`](tests/nousai-web-app.spec.ts) | Dist resolution, prompt sections, URL-line readiness, roster identity |
 
 </details>

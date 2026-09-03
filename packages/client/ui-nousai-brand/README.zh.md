@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-NousAI 部署的浏览器品牌来自本插件：侧边栏与会话主视觉品牌插槽中的 NousAI 标识，以及首次运行时不出现 DeepSeek 品牌的内测须知。它填充 `sidebar.brand.mark`、`sidebar.brand.name` 与 `conversation.hero.brand.mark`——原生 UI 在官方构建之外让这些插槽留空——并以一个立即完成的步骤遮蔽原有 `settings.onboarding` 欢迎步骤。抑制是可逆的单元遮蔽而非移除：原条目仍在台账上，本插件卸载或崩溃时自动回归。供应商引导——提供方 API 密钥步骤——刻意不动，因为它点名的是模型供应商而非产品。
+NousAI 部署的浏览器品牌来自本插件：侧边栏与会话主视觉品牌插槽中的 NousAI 标识，以及首次运行时不出现 DeepSeek 品牌的内测须知。它填充 `sidebar.brand.mark`、`sidebar.brand.name` 与 `conversation.hero.brand.mark`——官方构建之外，原生 UI 让侧边栏插槽留空，主视觉插槽则绘制其自带的 DeepSeek 鱼形标识——并以一个立即完成的步骤遮蔽原有 `settings.onboarding` 欢迎步骤。抑制是可逆的单元遮蔽而非移除：原条目仍在台账上，本插件卸载或崩溃时自动回归。供应商引导——提供方 API 密钥步骤——刻意不动，因为它点名的是模型供应商而非产品。
 
 ## 目录
 
@@ -48,7 +48,7 @@ NousAI 部署的浏览器品牌来自本插件：侧边栏与会话主视觉品�
 <details>
 <summary>实现内部——点击展开</summary>
 
-浏览器半注册三个品牌插槽占位者——`sidebar.brand.mark`、`sidebar.brand.name` 与 `conversation.hero.brand.mark`——渲染从 `ui-primitives` 导入的 NousAI 标识，而 NousAI 构建把该模块替换为 NousAI 品牌模块，插槽占位者与所有直接消费者因此共用同一份图形。它还以优先级 −1 遮蔽原有 `settings.onboarding` 槽位单元 id `welcome-notice`（由 [`ui-settings-models`](../ui-settings-models/README.zh.md) 以默认优先级注册），替换为一个立即完成、不渲染任何内容的步骤。所有注册都随 fiber 释放。
+浏览器半注册三个品牌插槽占位者——`sidebar.brand.mark`、`sidebar.brand.name` 与 `conversation.hero.brand.mark`——渲染从 `ui-primitives` 导入的 NousAI 标识，而 NousAI 构建把该模块替换为 NousAI 品牌模块，插槽占位者与所有直接消费者因此共用同一份图形。主视觉占位者是承重的：`ui-brand-official` 只注册两个侧边栏插槽，缺少本占位者时主视觉会渲染 `ui-conversation` 自带的 DeepSeek 动画鱼形标识。它还以优先级 −1 遮蔽原有 `settings.onboarding` 槽位单元 id `welcome-notice`（由 [`ui-settings-models`](../ui-settings-models/README.zh.md) 以默认优先级注册），替换为一个立即完成、不渲染任何内容的步骤。所有注册都随 fiber 释放。
 
 ### 源码地图
 
@@ -58,7 +58,7 @@ NousAI 部署的浏览器品牌来自本插件：侧边栏与会话主视觉品�
 | [`src/client/Brand.tsx`](src/client/Brand.tsx) | 基于 `ui-primitives` 品牌模块的标识与字标占位者 |
 | [`src/client/NousAiWelcomeSkip.tsx`](src/client/NousAiWelcomeSkip.tsx) | 立即完成的引导步骤 |
 | [`src/index.ts`](src/index.ts) | node 半：空的花名册条目 |
-| [`src/invariant.ts`](src/invariant.ts) | 不变量伴随：无运行时不变量；每项贡献都随注册表释放 |
+| — | 不发布运行时不变量伴随入口：品牌插槽占位者与引导槽位单元都随 fiber 由注册表释放，本包自身不持有可审计的可变状态 |
 | [`tests/browser-plugin.client.spec.tsx`](tests/browser-plugin.client.spec.tsx) | 插槽填充、单元遮蔽与释放行为 |
 
 </details>

@@ -5,7 +5,7 @@
  * winning priority, the shadowed occupant survives on the ledger and returns
  * when the plugin fiber is disposed (HMR safety), and the step component
  * completes the coordinator step exactly once without rendering chrome. The
- * node half and the invariant companion are exercised over the same Context.
+ * node half is exercised over the same Context.
  */
 import { Context } from '@deepseek-ai/cordis'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -15,7 +15,6 @@ import { NousAiBrandMark, NousAiBrandName } from '../src/client/Brand.tsx'
 import { NousAiWelcomeSkip } from '../src/client/NousAiWelcomeSkip.tsx'
 import { apply, inject } from '../src/client/index.ts'
 import { apply as nodeApply } from '../src/index.ts'
-import * as invariant from '../src/invariant.ts'
 
 afterEach(cleanup)
 
@@ -94,21 +93,7 @@ describe('ui-nousai-brand browser plugin', () => {
     expect(complete).toHaveBeenCalledTimes(1)
   })
 
-  it('node half is a pure roster entry and the invariant companion registers ownership', async () => {
+  it('node half is a pure roster entry', () => {
     nodeApply() // the node half is an empty roster entry; it must not throw
-
-    const ctx = new Context()
-    const registered: string[] = []
-    const dispose = vi.fn()
-    ctx.provide('invariants', {
-      register: (name: string) => {
-        registered.push(name)
-        return dispose
-      },
-    })
-    await expect(invariant.apply(ctx as never)).resolves.toBe(dispose)
-    expect(registered).toEqual(['@deepseek-ai/dsh-client-ui-nousai-brand'])
-    expect(invariant.name).toBe('client-ui-nousai-brand-invariant')
-    expect(invariant.inject).toEqual(['invariants'])
   })
 })
