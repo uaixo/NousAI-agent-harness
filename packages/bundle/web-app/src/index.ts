@@ -25,7 +25,6 @@ import { launchEnvironmentOf } from '@deepseek-ai/dsh-launch-environment'
 import { scrubbedParentEnv } from '@deepseek-ai/dsh-subprocess'
 import type {} from '@deepseek-ai/cordis-plugin-loader'
 import type {} from '@deepseek-ai/dsh-host-webserver'
-import { FIRST_PARTY_SECTION_ORDER } from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-shell-env'
 
 /** Stable Cordis plugin name. */
@@ -202,7 +201,7 @@ export function applyWebRuntime(ctx: Context, config: Config, identity: WebRunti
       identity.harnessSource(promptCtx)
       promptCtx.systemPrompt.section({
         name: 'app:web-surface',
-        order: FIRST_PARTY_SECTION_ORDER.WEB_SURFACE,
+        order: promptCtx.systemPrompt.getSectionOrder('WEB_SURFACE'),
         text: () => identity.surfacePrompt(localWebUrl(promptCtx, identity.pluginName)),
       })
     })

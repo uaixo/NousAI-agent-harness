@@ -33,9 +33,6 @@
       "path": "../../shell/shell-env"
     },
     {
-      "path": "../../runtime-diagnostics/invariants"
-    },
-    {
       "path": "../web-app"
     }
   ]

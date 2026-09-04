@@ -15,7 +15,6 @@ import { Context } from '@deepseek-ai/cordis'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import type { WebServer } from '@deepseek-ai/dsh-host-webserver'
 import { apply, Config, internals, inject, name } from '../src/index.ts'
-import * as invariant from '../src/invariant.ts'
 
 vi.mock('node:os', async importOriginal => ({
   ...await importOriginal<typeof import('node:os')>(),
@@ -255,22 +254,8 @@ describe('nousai-web-app runtime glue', () => {
     expect(originalResolve()).toMatch(/web-nousai[/\\]dist[/\\]index\.html$/)
   })
 
-  it('exports the roster identity and the invariant companion registers ownership', async () => {
+  it('exports the roster identity', () => {
     expect(name).toBe('nousai-web-app')
     expect(inject).toEqual(['webServer'])
-
-    const ctx = new Context()
-    const registered: string[] = []
-    const dispose = vi.fn()
-    ctx.provide('invariants', {
-      register: (packageName: string) => {
-        registered.push(packageName)
-        return dispose
-      },
-    })
-    await expect(invariant.apply(ctx as never)).resolves.toBe(dispose)
-    expect(registered).toEqual(['@deepseek-ai/dsh-nousai-web-app'])
-    expect(invariant.name).toBe('nousai-web-app-invariant')
-    expect(invariant.inject).toEqual(['invariants'])
   })
 })

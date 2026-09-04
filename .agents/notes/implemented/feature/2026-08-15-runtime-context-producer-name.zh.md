@@ -35,7 +35,7 @@ Status: implemented
 ## 测试
 
 - `packages/core/agent-loop` 单元覆盖固定了新建快照上记录的来源，以及恢复、取代和清除既有快照的 `isOwned` 回放路径。
-- `packages/client/ui-conversation` jsdom 覆盖固定了该行渲染出的可访问名称。
+- `packages/client/ui-chat` jsdom 覆盖固定了该行渲染出的可访问名称。
 - 无密钥的组装式 Web golden，以及 ACP、headless、JSON-RPC 和 Python SDK 的会话日志都携带新的生产者名称，因此证明它的是组装后的 transcript，而不只是组件测试。
 
 ## 后果

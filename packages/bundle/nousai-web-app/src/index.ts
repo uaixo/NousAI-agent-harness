@@ -21,7 +21,6 @@ import { HARNESS_SOURCE_SECTION } from '@deepseek-ai/dsh-app-boot'
 import { applyWebRuntime } from '@deepseek-ai/dsh-web-app'
 import type {} from '@deepseek-ai/cordis-plugin-loader'
 import type {} from '@deepseek-ai/dsh-host-webserver'
-import { FIRST_PARTY_SECTION_ORDER } from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-shell-env'
 
 /** Stable Cordis plugin name. */
@@ -79,7 +78,7 @@ function webSurfacePrompt(webUrl: string): string {
 function addNousAiSourceSection(promptCtx: Context): void {
   promptCtx.systemPrompt.section({
     name: HARNESS_SOURCE_SECTION,
-    order: FIRST_PARTY_SECTION_ORDER.HARNESS_SOURCE,
+    order: promptCtx.systemPrompt.getSectionOrder('HARNESS_SOURCE'),
     text: `The NousAI Harness implementation checkout is at ${SOURCE_ROOT}. The checkout location and current working directory are separate values and may differ; never infer the working directory from this path. Use pwd to determine the current working directory. Use this checkout only to inspect or extend the harness itself.`,
   })
 }
