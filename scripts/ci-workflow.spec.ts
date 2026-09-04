@@ -653,21 +653,22 @@ describe('Python release workflows', () => {
 })
 
 describe('Issue lifecycle workflow', () => {
-  it('runs the lifecycle job on every PR/review event but gates token and board steps', () => {
+  it('subscribes the lifecycle job to every PR/review event, guards it to the upstream repository, and gates token and board steps', () => {
     const lifecycle = loadWorkflow('.github/workflows/issue-lifecycle.yml')
     const policy = loadWorkflow('.github/workflows/issue-policy.yml')
     const lifecycleJob = workflowJob(lifecycle, 'lifecycle')
     if (!Array.isArray(lifecycleJob.steps)) throw new TypeError('Issue lifecycle job must define steps')
 
-    // The job has no job-level `if`, so it is listed on every pull_request /
-    // pull_request_review event and reports success instead of a gray skip. The
-    // write-capable steps are gated at step level so approved/commented reviews
-    // never mint a Project/Issue App token nor touch the board.
+    // The workflow subscribes to both events, and the write-capable steps are
+    // gated at step level so approved/commented reviews never mint a
+    // Project/Issue App token nor touch the board.
     expect(lifecycle.on).toHaveProperty('pull_request')
     expect(lifecycle.on).toHaveProperty('pull_request_review')
-    // This fork guards the job to the upstream repository: the board and the
-    // Project/Issue App it writes to exist only there, so on a fork the job
-    // skips instead of failing every pull request on a missing token.
+    // Upstream carries no job-level `if`, so the job reports success there
+    // instead of a gray skip. This fork guards it to the upstream repository
+    // because the board and the Project/Issue App it writes to exist only
+    // there; on this fork the job skips rather than failing every pull request
+    // on a missing token.
     expect(lifecycleJob.if).toBe("${{ github.repository == 'deepseek-harness/deepseek-harness' }}")
     // Keep the subscription-type gates: issue-lifecycle does not re-subscribe
     // ready_for_review (issue-policy owns that) and only reacts to submitted

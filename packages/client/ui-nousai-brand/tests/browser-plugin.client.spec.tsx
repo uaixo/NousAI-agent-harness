@@ -5,7 +5,7 @@
  * winning priority, the shadowed occupant survives on the ledger and returns
  * when the plugin fiber is disposed (HMR safety), and the step component
  * completes the coordinator step exactly once without rendering chrome. The
- * node half is exercised over the same Context.
+ * node half stays inert.
  */
 import { Context } from '@deepseek-ai/cordis'
 import { afterEach, describe, expect, it, vi } from 'vitest'

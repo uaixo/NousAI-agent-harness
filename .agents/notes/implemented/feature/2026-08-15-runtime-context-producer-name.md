@@ -35,7 +35,7 @@ This is the remedy the [context-source marks decision](2026-08-04-web-context-so
 ## Testing
 
 - `packages/core/agent-loop` unit coverage pins the recorded source on a fresh snapshot and the `isOwned` replay path that restores, supersedes, and clears a retained one.
-- `packages/client/ui-conversation` jsdom coverage pins the rendered accessible name of the row.
+- `packages/client/ui-chat` jsdom coverage pins the rendered accessible name of the row.
 - The keyless assembled-Web goldens and the ACP, headless, JSON-RPC, and Python-SDK session logs carry the new producer name, so the assembled transcripts prove it rather than component tests alone.
 
 ## Consequences
