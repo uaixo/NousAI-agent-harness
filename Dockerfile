@@ -11,7 +11,8 @@
 
 FROM node:24-bookworm-slim AS build
 
-# python3/make/g++ build node-pty, the one native dependency pnpm has to compile.
+# python3/make/g++ compile fs-ext, the session write-lock binding pnpm builds with
+# node-gyp at install; node-pty and koffi ship prebuilt Linux binaries.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends python3 make g++ ca-certificates git \
  && rm -rf /var/lib/apt/lists/*
@@ -21,7 +22,10 @@ RUN npm install -g pnpm@11.7.0
 WORKDIR /app
 COPY . .
 
-RUN pnpm install --frozen-lockfile
+# node-gyp downloads Node headers from nodejs.org unless npm_config_nodedir names
+# an install that ships them; this image's Node does, so the build needs no
+# egress beyond the npm registry.
+RUN npm_config_nodedir="$(dirname "$(dirname "$(command -v node)")")" pnpm install --frozen-lockfile
 
 # Both builds are required. Without build:lib the loader dies with
 # "typert contributor(s) failed to register"; without build:web:nousai it dies
