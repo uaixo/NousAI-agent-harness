@@ -20,7 +20,7 @@ Status: implemented
 
 ## Alternatives considered
 
-**就地改写原包。** 预发布姿态允许自由改名，直接编辑 `FishLogo`/`BrandWordmark`/`index.html` 总代码量更小。但它失去本特性存在的前提：DeepSeek 原品牌与 NousAI 皮肤作为按 profile 的组合选择共存、上游不动。
+**就地改写原包。** 公共 API 尚未稳定，因此允许改名，直接编辑 `FishLogo`/`BrandWordmark`/`index.html` 总代码量更小。但它失去本特性存在的前提：DeepSeek 原品牌与 NousAI 皮肤作为按 profile 的组合选择共存、上游不动。
 
 **运行时遮蔽 `sidebar`/`conversation` 槽位。** 整区优先级遮蔽无需 fork dist，但遮蔽条目在原条目存活期间无法重声明其子槽位，`sidebar.workspaces`/`sidebar.settings`/页脚贡献将被放弃；且服务出的标题、favicon、manifest 与启动页无论如何仍是 DeepSeek 品牌。仅保留为引导单元的机制——那里被遮蔽条目没有子槽位。
 

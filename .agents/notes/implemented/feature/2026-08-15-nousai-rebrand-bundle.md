@@ -20,7 +20,7 @@ Product-vs-vendor is the scope rule: strings naming the model vendor's API are n
 
 ## Alternatives considered
 
-**In-place rebrand of the stock packages.** The pre-release stance permits renaming freely, and editing `FishLogo`/`BrandWordmark`/`index.html` directly is less total code. It loses the requirement this feature exists for: stock DeepSeek branding and the NousAI skin coexisting as a composition choice per profile, with upstream untouched.
+**In-place rebrand of the stock packages.** Public APIs are pre-stable, so renaming is permitted, and editing `FishLogo`/`BrandWordmark`/`index.html` directly is less total code. It loses the requirement this feature exists for: stock DeepSeek branding and the NousAI skin coexisting as a composition choice per profile, with upstream untouched.
 
 **Runtime slot shadowing of `sidebar`/`conversation`.** Priority-shadowing whole regions needs no dist fork, but a shadowing entry cannot redeclare the shipped entry's child slots while it lives, so `sidebar.workspaces`/`sidebar.settings`/footer contributions are forfeited; the served title, favicon, manifest, and boot page stay DeepSeek-branded regardless. Kept only as the mechanism for the onboarding cell, where the shadowed entry has no children.
 

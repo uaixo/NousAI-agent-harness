@@ -41,5 +41,5 @@ This is the remedy the [context-source marks decision](2026-08-04-web-context-so
 ## Consequences
 
 - No producer in the product records an `@scope/package` name any more; the package-shaped names that remain are the plain `dsh-`-prefixed ones (`dsh-compaction-basic`, `dsh-session-title-llm`).
-- The name is durable data, so a session log written before this change keeps the old value. `isOwned` does not match it: the projection treats such a session as having no retained snapshot and appends a current one on the next turn, and the superseded row keeps rendering its old name. This is the pre-release stance on on-disk formats, not a migration.
+- The name is durable data, so a session log written before this change keeps the old value. `isOwned` does not match it: the projection treats such a session as having no retained snapshot and appends a current one on the next turn, and the superseded row keeps rendering its old name. Released Session JSONL follows adjacent migration, which never rewrites a committed row, so no migration touches this value.
 - The recorded producer name is now a reader-facing string. Changing it again is a transcript-visible edit, and it moves every recorded fixture with it.
