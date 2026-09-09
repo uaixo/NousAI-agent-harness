@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-A web profile gains the NousAI product identity from this layer: the NousAI shell dist with the page title, favicon, PWA manifest, boot-page wordmark, and the NousAI brand marks, plus a model-facing persona that names the NousAI Harness — with no fork of any UI plugin. No shipped profile includes it; one `dsh plugin` command adds it over the stock `web` profile, and the same command removes it to return to the DeepSeek branding. The NousAI dist comes from `pnpm run build:web:nousai`; a composition boots without it, and the GUI serves request-time 404s until the dist exists. Vendor branding is deliberately untouched: the DeepSeek LLM provider name, `DEEPSEEK_API_KEY`, endpoints, and model names describe the model vendor, not the product.
+A web profile gains the NousAI product identity from this layer: the NousAI shell dist (page title, favicon, PWA manifest, boot-page wordmark, and brand marks) plus a model-facing persona that names the NousAI Harness, with no fork of any UI plugin. No shipped profile includes it; one `dsh plugin` command adds it over the stock `web` profile and removes it. The dist comes from `pnpm run build:web:nousai`; without it the composition boots and the GUI serves 404s. Vendor branding stays untouched: the DeepSeek provider name, `DEEPSEEK_API_KEY`, endpoints, and model names describe the model vendor, not the product.
 
 ## Table of Contents
 
@@ -81,15 +81,15 @@ Read these pages for the stock runtime this layer rides on and the branding piec
 
 #### What the model sees
 
-The fixed "powered by DeepSeek Harness" identity opener is suppressed (`includeHarnessIdentity: false`); the deployment persona names the NousAI Harness instead. When `surfaceContext` is true, the `harness:source` section and the `app:web-surface` section carry the same orientation as the stock bundle with NousAI wording, and `DSH_WEB_URL`'s description names the NousAI Harness Web GUI. Structure, section names, and orders are the stock bundle's.
+The fixed "powered by DeepSeek Harness" identity opener is suppressed (`includeHarnessIdentity: false`); the deployment persona prefix names the NousAI Harness instead, and the persona suffix keeps the stock cwd line after the reusable first-party instructions. When `surfaceContext` is true, the `harness:source` section and the `app:web-surface` section carry the same orientation as the stock bundle with NousAI wording, and `DSH_WEB_URL`'s description names the NousAI Harness Web GUI. Structure, section names, and orders are the stock bundle's.
 
 #### Token effect
 
-Identical shape to the stock web surface: one persona line, one source line, one prompt paragraph, two managed-environment variable lines; constant per process.
+Identical shape to the stock web surface: one persona prefix line, one source line, one prompt paragraph, one persona suffix line, two managed-environment variable lines; constant per process.
 
 #### KV Cache effect
 
-The sections sit near the system prompt's head and are stable for the life of the process, so they do not invalidate the cache across turns. Installing or removing this bundle changes the prompt prefix between processes, as any composition change does.
+The persona prefix sits at the system prompt's head; the source, Web, and persona suffix sections follow the first-party reusable instructions, so different checkout paths, ports, or working directories leave that preceding prefix unchanged when tools and configuration match. All of them are stable for the life of the process. Installing or removing this bundle changes the prompt prefix between processes, as any composition change does; provider cache reuse is not guaranteed.
 
 ## Known Limitations and Deferred Work
 

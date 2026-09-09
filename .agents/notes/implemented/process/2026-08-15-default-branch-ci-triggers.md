@@ -12,7 +12,7 @@ Actions cache scoping sharpens the failure. `wine-apt-cache` and `serial-linux` 
 
 ## Decision
 
-Every push-triggered workflow triggers on `branches: [main]`, and the three `ci.yml` job guards compare `github.ref` against `refs/heads/main`.
+Every push-triggered workflow triggers on `branches: [main]`, and the four `ci-master.yml` job guards compare `github.ref` against `refs/heads/main`.
 
 The trigger change and the rename shipped as separate steps. Both names were listed on all seven triggers and accepted by all three guards until `main` became the default branch, which made the two events independent: the push lane covered whichever branch was default at any moment, in either order, with no window where nothing ran. `master` left the triggers and guards once the flip completed.
 

@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/bundle/nousai-web-app/README.md
-README.md: 0b372eaeacbf60bfc5a0e43e30308afca7417fc9
-README.zh.md: afbc727b33af9c07e8cba63e9dca08aa497a3b0f
+README.md: b414ebc73d8eb68c33555ced5d9d5511773f1ac3
+README.zh.md: 7d98b0101a74cda2715a95bc45c3e36c543efc9b

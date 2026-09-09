@@ -32,11 +32,11 @@ env:
 
 jobs:
   preview:
-    # The preview depends on the upstream repository's runner pool and
-    # Cloudflare secrets; on any other repository (this fork included) it
-    # would queue forever, so the job runs only there.
+    # The preview deploys with the upstream repository's Cloudflare secrets;
+    # on any other repository (this fork included) it would fail, so the job
+    # runs only there.
     if: github.repository == 'deepseek-harness/deepseek-harness'
-    runs-on: dsh-ubuntu-24-04-16core
+    runs-on: ubuntu-24.04
     name: cloudflare pages preview
     steps:
       - uses: actions/checkout@v6

@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-NousAI 部署的浏览器品牌来自本插件：侧边栏与会话主视觉品牌插槽中的 NousAI 标识，以及首次运行时不出现 DeepSeek 品牌的内测须知。它填充 `sidebar.brand.mark`、`sidebar.brand.name` 与 `conversation.hero.brand.mark`——官方构建之外，原生 UI 让侧边栏插槽留空，主视觉插槽则绘制其自带的 DeepSeek 鱼形标识——并以一个立即完成的步骤遮蔽原有 `settings.onboarding` 欢迎步骤。抑制是可逆的单元遮蔽而非移除：原条目仍在台账上，本插件卸载或崩溃时自动回归。供应商引导——提供方 API 密钥步骤——刻意不动，因为它点名的是模型供应商而非产品。
+NousAI 部署的浏览器品牌来自本插件：侧边栏与会话主视觉品牌插槽中的 NousAI 标识，以及首次运行时不出现 DeepSeek 品牌的内测须知。它填充 `sidebar.brand.mark`、`sidebar.brand.name` 与 `conversation.hero.brand.mark`（官方构建之外，原生 UI 让侧边栏插槽留空，主视觉插槽则绘制其自带的 DeepSeek 鱼形标识），并以一个立即完成的步骤遮蔽原有 `settings.onboarding` 欢迎步骤。遮蔽是可逆的：本插件卸载时原条目自动回归。供应商引导（提供方 API 密钥步骤）保持不动，因为它点名的是模型供应商而非产品。
 
 ## 目录
 
