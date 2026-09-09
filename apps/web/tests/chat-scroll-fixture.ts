@@ -71,7 +71,7 @@ function appendSystemPrompt(session: Session, turn: number, step: number): void 
     step,
     message: createSystemMessage(
       'Synthetic chat-scroll system prompt.',
-      '@deepseek-ai/dsh-system-prompt',
+      'Runtime context',
     ),
   }, { surfaceOp: 'append' })
 }

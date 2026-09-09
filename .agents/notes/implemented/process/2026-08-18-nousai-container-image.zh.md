@@ -18,7 +18,7 @@ Status: implemented
 
 ## Sandbox posture
 
-在 rootless 容器中，两级 Linux 沙箱都不可用：bwrap 无法创建嵌套用户命名空间；Landlock 启动器二进制是 release 工作流的预构建产物、`pnpm install` 不会产出，因此即使内核支持 Landlock（实测 ABI 9），功能探测也报告 `unusable`。启动与模型轮次不受影响；shell 命令会抛出 `SANDBOX_UNAVAILABLE`。部署方要么设置 `DSH_PERMISSION_MODE=danger-full-access` 并把容器本身当作边界，要么增加一个运行 `native/landlock-run` `build:native` 的构建阶段。镜像中刻意不解决：这是安全姿态决策，不是构建细节。重新引入条件：一旦确定容器内沙箱立场，即添加启动器构建阶段（或预构建拉取）并删除本段。
+在 rootless 容器中，两级 Linux 沙箱都不可用：bwrap 无法创建嵌套用户命名空间；Landlock 启动器二进制是 release 工作流的预构建产物、`pnpm install` 不会产出，因此即使内核支持 Landlock（实测 ABI 9），功能探测也报告 `unusable`。启动与模型轮次不受影响；shell 命令会抛出 `SANDBOX_UNAVAILABLE`。部署方要么设置 `DSH_PERMISSION_MODE=danger-full-access` 并把容器本身当作边界，要么增加一个运行 `native/system` `build:native` 的构建阶段。镜像中刻意不解决：这是安全姿态决策，不是构建细节。重新引入条件：一旦确定容器内沙箱立场，即添加启动器构建阶段（或预构建拉取）并删除本段。
 
 ## Alternatives considered
 

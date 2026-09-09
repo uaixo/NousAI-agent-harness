@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-08-18-nousai-container-image.md
-2026-08-18-nousai-container-image.md: 9ad14d6626828d6ea75ff966bbb3bc3c4652c5d3
-2026-08-18-nousai-container-image.zh.md: e3cdb88dda7311e880646331cecbe31a431fb4ec
+2026-08-18-nousai-container-image.md: ea428a0dbd96c128f0a140a6fca246c6d77a5aec
+2026-08-18-nousai-container-image.zh.md: b66fa9a463846ec910cae217332544adad540986

@@ -12,7 +12,7 @@ Actions 缓存作用域会放大这一故障。`wine-apt-cache` 与 `serial-linu
 
 ## Decision
 
-每个 push 触发的工作流以 `branches: [main]` 触发，`ci.yml` 中的三个 job 守卫以 `refs/heads/main` 比较 `github.ref`。
+每个 push 触发的工作流以 `branches: [main]` 触发，`ci-master.yml` 中的四个 job 守卫以 `refs/heads/main` 比较 `github.ref`。
 
 触发器改动与重命名分两步落地。在 `main` 成为默认分支之前，七个触发器同时列出两个分支名，三个守卫也同时接受两者，从而让这两件事彼此独立：无论以何种顺序发生，push 通道始终覆盖当时的默认分支，不存在任何无人运行的窗口。切换完成后，`master` 即从触发器与守卫中移除。
 

@@ -408,7 +408,7 @@ describe('parseSessionLog', () => {
       message: {
         id: expect.stringMatching(/^v2-to-v3-system-/) as unknown,
         role: 'system',
-        source: { kind: 'plugin', plugin: '@deepseek-ai/dsh-system-prompt' },
+        source: { kind: 'plugin', plugin: 'Runtime context' },
         content: [],
       },
     },

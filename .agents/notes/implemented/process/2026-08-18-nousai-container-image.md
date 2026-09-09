@@ -18,7 +18,7 @@ The image ships the whole workspace including devDependencies: dsh resolves its 
 
 ## Sandbox posture
 
-In a rootless container neither Linux sandbox rung works: bwrap cannot create a nested user namespace, and the Landlock launcher binary is a release-workflow prebuilt that `pnpm install` does not produce, so the functional probe reports `unusable` even on a Landlock-capable kernel (ABI 9 measured). Boot and model turns are unaffected; shell commands raise `SANDBOX_UNAVAILABLE`. The deployment either sets `DSH_PERMISSION_MODE=danger-full-access` and treats the container as the boundary, or adds a build stage running `native/landlock-run`'s `build:native`. Deliberately unresolved in the image: it is a security-posture decision, not a build detail. Reintroduction condition: deciding the in-container sandbox stance adds the launcher build stage (or a prebuilt fetch) and drops this paragraph.
+In a rootless container neither Linux sandbox rung works: bwrap cannot create a nested user namespace, and the Landlock launcher binary is a release-workflow prebuilt that `pnpm install` does not produce, so the functional probe reports `unusable` even on a Landlock-capable kernel (ABI 9 measured). Boot and model turns are unaffected; shell commands raise `SANDBOX_UNAVAILABLE`. The deployment either sets `DSH_PERMISSION_MODE=danger-full-access` and treats the container as the boundary, or adds a build stage running `native/system`'s `build:native`. Deliberately unresolved in the image: it is a security-posture decision, not a build detail. Reintroduction condition: deciding the in-container sandbox stance adds the launcher build stage (or a prebuilt fetch) and drops this paragraph.
 
 ## Alternatives considered
 
