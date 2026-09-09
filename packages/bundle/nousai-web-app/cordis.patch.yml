@@ -25,12 +25,14 @@
 
 # Restates the web-app persona with the NousAI product name and removes the
 # fixed "powered by DeepSeek Harness" identity opener; the NousAI identity
-# rides the persona itself.
+# rides the persona prefix itself. The suffix keeps the stock placement of the
+# per-machine cwd after the reusable first-party instructions.
 - id: system-prompt
   config:
     includeHarnessIdentity: false
-    persona: >-
-      You are a coding agent of the NousAI Harness, powered by the {{model}} model. Your working directory is {{cwd}}.
+    personaSuffix: Your working directory is {{cwd}}.
+    personaPrefix: >-
+      You are a coding agent of the NousAI Harness, powered by the {{model}} model.
 
 - insert:
     # NousAI web glue: serves the NousAI shell dist (NousAI marks as the

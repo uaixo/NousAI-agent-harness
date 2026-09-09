@@ -10,7 +10,7 @@ Status: implemented
 
 ## Decision
 
-一个双阶段 OCI 镜像（`Dockerfile`、`docker/`）在 Podman 与 Docker 下以相同方式构建。构建阶段编译 workspace（`build:lib` + `build:web:nousai`），并将 profile bundle 图解析进 `/opt/dsh-seed` 的一次性 `DSH_HOME` 种子：profile manifest（`docker/profile-package.json`）在运行 `dsh plugin install` *之前*写入，使默认 profile 脚手架不可能发生；三个 fork 包全部显式链接（`link:/app/...`），因为 `workspace:^` 离开 workspace 后即失效。若任一 NousAI 包未链接进种子 profile，构建即失败——两种静默失败模式都被转换为响亮的构建失败。
+一个双阶段 OCI 镜像（`Dockerfile`、`docker/`）在 Podman 与 Docker 下以相同方式构建。构建阶段编译 workspace（先以 `build:native-system` 编译会话写锁所需的 flock 插件，再 `build:lib` + `build:web:nousai`），并将 profile bundle 图解析进 `/opt/dsh-seed` 的一次性 `DSH_HOME` 种子：profile manifest（`docker/profile-package.json`）在运行 `dsh plugin install` *之前*写入，使默认 profile 脚手架不可能发生；三个 fork 包全部显式链接（`link:/app/...`），因为 `workspace:^` 离开 workspace 后即失效。若任一 NousAI 包未链接进种子 profile，构建即失败——两种静默失败模式都被转换为响亮的构建失败。
 
 运行阶段携带构建好的 `/app` 与种子。`docker/entrypoint.sh` 仅在 profile 缺失时把种子复制进挂载的 `/data` 卷，仅在对应文件缺失时写入 `webserver` 绑定 patch（`0.0.0.0:3080`）与 LM Studio provider 设置文件，随后针对当前镜像重新链接 profile（失败时告警可见、启动继续），最后 exec `dsh web`。CLI 对 `--host 0.0.0.0` 的拒绝保持不变；profile patch 是 schema 合法的通道，其守护的暴露风险通过仅发布到环回地址（`-p 127.0.0.1:3080:3080`）恢复。在启用 SELinux 的宿主上（包括 `podman machine` 背后的 Fedora CoreOS 虚拟机）卷挂载需要 `:Z`；缺少它时，复用同一卷的第二个容器会获得不同的 MCS 类别，种子复制死于 `Permission denied`。
 

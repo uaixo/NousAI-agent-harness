@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-15-nousai-rebrand-bundle.md
-2026-08-15-nousai-rebrand-bundle.md: 563487b076ea6adbe7792fe701073b1a9c647f61
-2026-08-15-nousai-rebrand-bundle.zh.md: bcd23a8249035081df1f79e923750d3b1931117c
+2026-08-15-nousai-rebrand-bundle.md: b33e28fcc3629ed72a721902140a1d814a5af4b3
+2026-08-15-nousai-rebrand-bundle.zh.md: 2a1347e03ba0fac0442d2d43699f62f35c1220cf

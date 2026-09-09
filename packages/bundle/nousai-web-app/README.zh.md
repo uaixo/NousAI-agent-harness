@@ -9,7 +9,7 @@ kind: "package-bundle"
 
 ## 概述
 
-Web profile 从本层获得 NousAI 产品身份：带页面标题、favicon、PWA manifest、启动页字标与 NousAI 品牌标识的 NousAI 外壳 dist，加上点名 NousAI Harness 的模型可见角色设定——且不 fork 任何 UI 插件。没有内置 profile 包含它；一条 `dsh plugin` 命令即可将其叠加到原生 `web` profile 之上，用同一命令移除即可回到 DeepSeek 品牌。NousAI dist 由 `pnpm run build:web:nousai` 产出；组合缺少它也能启动，GUI 在 dist 存在之前按请求返回 404。供应商品牌刻意保持不动：DeepSeek LLM 提供方名称、`DEEPSEEK_API_KEY`、端点与模型名描述的是模型供应商而非产品。
+Web profile 从本层获得 NousAI 产品身份：NousAI 外壳 dist（页面标题、favicon、PWA manifest、启动页字标与品牌标识），加上点名 NousAI Harness 的模型可见角色设定，且不 fork 任何 UI 插件。没有内置 profile 包含它；一条 `dsh plugin` 命令即可将其叠加到原生 `web` profile 之上，也可将其移除。dist 由 `pnpm run build:web:nousai` 产出；缺少它组合照常启动，GUI 返回 404。供应商品牌保持不动：DeepSeek 提供方名称、`DEEPSEEK_API_KEY`、端点与模型名描述的是模型供应商而非产品。
 
 ## 目录
 
@@ -81,15 +81,15 @@ GUI 提供 NousAI 外壳：页面外观、启动页字标、以及侧边栏与�
 
 #### 模型看到什么
 
-固定的 "powered by DeepSeek Harness" 身份开场被抑制（`includeHarnessIdentity: false`）；部署角色设定改为点名 NousAI Harness。`surfaceContext` 为 true 时，`harness:source` 段与 `app:web-surface` 段以 NousAI 措辞承载与原 bundle 相同的定向信息，`DSH_WEB_URL` 的描述点名 NousAI Harness Web GUI。结构、段名与顺序与原 bundle 一致。
+固定的 "powered by DeepSeek Harness" 身份开场被抑制（`includeHarnessIdentity: false`）；部署角色设定前缀改为点名 NousAI Harness，角色设定后缀则保留原生的 cwd 行，位于可复用的第一方指令之后。`surfaceContext` 为 true 时，`harness:source` 段与 `app:web-surface` 段以 NousAI 措辞承载与原 bundle 相同的定向信息，`DSH_WEB_URL` 的描述点名 NousAI Harness Web GUI。结构、段名与顺序与原 bundle 一致。
 
 #### Token 影响
 
-与原 Web 界面形状相同：一行角色设定、一行源码位置、一段提示词、两行受管环境变量说明；每进程恒定。
+与原 Web 界面形状相同：一行角色设定前缀、一行源码位置、一段提示词、一行角色设定后缀、两行受管环境变量说明；每进程恒定。
 
 #### KV 缓存影响
 
-这些段落位于系统提示词头部附近，进程生命周期内稳定，跨轮次不会失效缓存。安装或移除本 bundle 会改变进程之间的提示词前缀，与任何组合变更相同。
+角色设定前缀位于系统提示词头部；源码、Web 与角色设定后缀段落位于第一方可复用指令之后，因此工具与配置一致时，不同的 checkout 路径、端口或工作目录不会改变前置前缀。它们在进程生命周期内均保持稳定。安装或移除本 bundle 会改变进程之间的提示词前缀，与任何组合变更相同；不保证提供方复用缓存。
 
 ## 已知限制与延期工作
 

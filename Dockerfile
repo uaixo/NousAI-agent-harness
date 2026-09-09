@@ -11,8 +11,9 @@
 
 FROM node:24-bookworm-slim AS build
 
-# python3/make/g++ compile fs-ext, the session write-lock binding pnpm builds with
-# node-gyp at install; node-pty and koffi ship prebuilt Linux binaries.
+# gcc's cc compiles the node-addon-system flock addon below (build:native-system);
+# python3/make stay for node-gyp fallbacks. node-pty and koffi ship prebuilt
+# Linux binaries.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends python3 make g++ ca-certificates git \
  && rm -rf /var/lib/apt/lists/*
@@ -22,15 +23,15 @@ RUN npm install -g pnpm@11.7.0
 WORKDIR /app
 COPY . .
 
-# node-gyp downloads Node headers from nodejs.org unless npm_config_nodedir names
-# an install that ships them; this image's Node does, so the build needs no
-# egress beyond the npm registry.
-RUN npm_config_nodedir="$(dirname "$(dirname "$(command -v node)")")" pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
-# Both builds are required. Without build:lib the loader dies with
-# "typert contributor(s) failed to register"; without build:web:nousai it dies
-# with "NousAI frontend dist not built".
-RUN pnpm run build:lib \
+# All three builds are required. A source checkout carries no prebuilt system
+# addon, and a missing flock binding rejects every session write lock, so
+# build:native-system compiles it here from this image's Node headers (no
+# download). Without build:lib the loader dies with "typert contributor(s)
+# failed to register"; without build:web:nousai the GUI serves 404s.
+RUN pnpm run build:native-system \
+ && pnpm run build:lib \
  && pnpm run build:web:nousai
 
 # Resolve the profile bundle graph now so the container starts offline.

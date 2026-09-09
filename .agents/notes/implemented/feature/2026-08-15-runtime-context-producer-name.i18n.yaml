@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-15-runtime-context-producer-name.md
-2026-08-15-runtime-context-producer-name.md: b48ec6f71b3314530d1f7fb9227911ef9ed47af1
-2026-08-15-runtime-context-producer-name.zh.md: fe45270b8e456038f67f9b750acc0fad277a72b9
+2026-08-15-runtime-context-producer-name.md: dd785e4cbec1cf8effc66941527fcdd35cf68d3a
+2026-08-15-runtime-context-producer-name.zh.md: 997dd860b757154bbe1f45136c8dca7a02adc37a
