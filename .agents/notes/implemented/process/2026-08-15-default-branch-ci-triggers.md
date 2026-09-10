@@ -18,6 +18,8 @@ The trigger change and the rename shipped as separate steps. Both names were lis
 
 Comments that named `master` as the branch now name the default branch, because the branch name was never the operative fact — cache scope, merge cadence, and standby-drill frequency all follow whichever branch is default.
 
+Jobs that act with upstream-owned inputs run only upstream, guarded by `github.repository == 'deepseek-harness/deepseek-harness'`: the issue lifecycle and issue policy automations, the Cloudflare Pages preview (upstream's deployment secrets), and the weighted-approval status publisher (upstream's reviewer weights). The release workflows' self-hosted `runs-on` expressions already carry that guard and keep upstream's `refs/heads/master` literal behind it. On this fork these jobs skip instead of failing or publishing a permanently unmet status.
+
 ## Alternatives considered
 
 **Point the triggers at `main` only.** This couples the workflow change to the exact moment of the rename. Landing it first kills the push lane on the still-default `master`; landing it after leaves a window with no post-merge CI. Listing both removes the ordering constraint.

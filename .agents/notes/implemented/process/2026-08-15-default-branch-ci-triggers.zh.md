@@ -18,6 +18,8 @@ Actions 缓存作用域会放大这一故障。`wine-apt-cache` 与 `serial-linu
 
 原本把 `master` 称作该分支的注释，现在改称默认分支——分支名从来不是起作用的事实，缓存作用域、合并节奏与待命演练频率，跟随的都是当时的默认分支。
 
+以上游自有输入行事的 job 仅在上游运行，由 `github.repository == 'deepseek-harness/deepseek-harness'` 守卫：issue lifecycle 与 issue policy 自动化、Cloudflare Pages 预览（上游的部署密钥）、加权批准状态发布器（上游的评审者权重）。release 工作流中的自托管 `runs-on` 表达式本已带该守卫，并在守卫之后保留上游的 `refs/heads/master` 字面量。在本 fork 上这些 job 会跳过，而不是失败或发布一个永远无法满足的状态。
+
 ## Alternatives considered
 
 **只把触发器指向 `main`。** 这会把工作流改动与重命名的确切时刻耦合在一起。先落地会切断仍为默认分支的 `master` 上的 push 通道；后落地则留下一段没有合并后 CI 的窗口。同时列出两者可消除这一顺序约束。

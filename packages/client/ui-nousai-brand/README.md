@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-A NousAI deployment gets its browser branding from this plugin: the NousAI marks in the sidebar and conversation-hero brand slots, and no DeepSeek-branded internal-testing notice on first run. It fills `sidebar.brand.mark`, `sidebar.brand.name`, and `conversation.hero.brand.mark` (outside the official build the stock UI leaves the sidebar slots empty and draws its own DeepSeek fish in the hero) and shadows the stock `settings.onboarding` welcome step with one that completes immediately. The shadowing is reversible: the stock entry returns if this plugin unloads. Vendor onboarding, the provider API-key step, stays untouched because it names the model vendor, not the product.
+A NousAI deployment gets its browser branding from this plugin: the NousAI marks in the sidebar and conversation-hero brand slots, and no DeepSeek-branded testing notice on first run. It fills `sidebar.brand.mark`, `sidebar.brand.name`, and `conversation.hero.brand.mark` (outside the official build the stock UI falls back to its DeepSeek fish and a build label in the sidebar, and to the fish in the hero) and shadows the stock `settings.onboarding` welcome step with one that completes immediately. Shadowing is reversible: the stock entry returns if this plugin unloads. Vendor onboarding, the provider API-key step, stays untouched: it names the model vendor, not the product.
 
 ## Table of Contents
 

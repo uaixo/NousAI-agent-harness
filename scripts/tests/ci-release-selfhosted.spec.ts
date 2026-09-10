@@ -91,7 +91,7 @@ for (const [file, jobIds] of [['release.yml', ['dependencies', 'pack']], ['relea
       // stay inert here, so the cases evaluate them as upstream does.
       expect(release.on).toEqual({ pull_request: null, push: { branches: ['main'] }, workflow_dispatch: null })
       expect(release.permissions).toEqual({ contents: 'read' })
-      expect(release.concurrency).toEqual({ group: '${{ github.workflow }}-${{ github.ref }}', 'cancel-in-progress': false })
+      expect(release.concurrency).toEqual({ group: '${{ github.workflow }}-${{ github.ref }}', 'cancel-in-progress': true })
     })
     for (const jobId of jobIds) {
       describe(jobId, () => {
