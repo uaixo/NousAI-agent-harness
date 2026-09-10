@@ -18,7 +18,7 @@ The trigger change and the rename shipped as separate steps. Both names were lis
 
 Comments that named `master` as the branch now name the default branch, because the branch name was never the operative fact — cache scope, merge cadence, and standby-drill frequency all follow whichever branch is default.
 
-Jobs that act with upstream-owned inputs keep upstream's `master` literals and run only upstream, guarded by `github.repository == 'deepseek-harness/deepseek-harness'`: the issue lifecycle and issue policy automations, the Cloudflare Pages preview (upstream's deployment secrets), the weighted-approval status publisher (upstream's reviewer weights), and the release workflows' self-hosted `runs-on` expressions, which already carry that guard. On this fork they skip instead of failing or publishing a permanently unmet status.
+Jobs that act with upstream-owned inputs run only upstream, guarded by `github.repository == 'deepseek-harness/deepseek-harness'`: the issue lifecycle and issue policy automations, the Cloudflare Pages preview (upstream's deployment secrets), and the weighted-approval status publisher (upstream's reviewer weights). The release workflows' self-hosted `runs-on` expressions already carry that guard and keep upstream's `refs/heads/master` literal behind it. On this fork these jobs skip instead of failing or publishing a permanently unmet status.
 
 ## Alternatives considered
 

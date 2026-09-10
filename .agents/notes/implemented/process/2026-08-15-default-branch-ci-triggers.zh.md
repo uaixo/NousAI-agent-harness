@@ -18,7 +18,7 @@ Actions 缓存作用域会放大这一故障。`wine-apt-cache` 与 `serial-linu
 
 原本把 `master` 称作该分支的注释，现在改称默认分支——分支名从来不是起作用的事实，缓存作用域、合并节奏与待命演练频率，跟随的都是当时的默认分支。
 
-以上游自有输入行事的 job 保留上游的 `master` 字面量，且仅在上游运行，由 `github.repository == 'deepseek-harness/deepseek-harness'` 守卫：issue lifecycle 与 issue policy 自动化、Cloudflare Pages 预览（上游的部署密钥）、加权批准状态发布器（上游的评审者权重），以及 release 工作流中本已带该守卫的自托管 `runs-on` 表达式。在本 fork 上它们会跳过，而不是失败或发布一个永远无法满足的状态。
+以上游自有输入行事的 job 仅在上游运行，由 `github.repository == 'deepseek-harness/deepseek-harness'` 守卫：issue lifecycle 与 issue policy 自动化、Cloudflare Pages 预览（上游的部署密钥）、加权批准状态发布器（上游的评审者权重）。release 工作流中的自托管 `runs-on` 表达式本已带该守卫，并在守卫之后保留上游的 `refs/heads/master` 字面量。在本 fork 上这些 job 会跳过，而不是失败或发布一个永远无法满足的状态。
 
 ## Alternatives considered
 
