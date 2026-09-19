@@ -62,7 +62,7 @@ function fakeHttpServer(host: '127.0.0.1' | '0.0.0.0' = '127.0.0.1'): { server: 
 
 /** A fake Loader whose settlement the test controls (the URL line waits on it). */
 function provideLoader(ctx: Context, settle: () => Promise<void> = async () => {}): void {
-  ctx.provide('loader', { await: settle } as never)
+  ctx.provide('loader', { await: settle, entries: () => [] } as never)
 }
 
 /** A fake Connection issuing deterministic process-token URLs (the announce waits on it). */
