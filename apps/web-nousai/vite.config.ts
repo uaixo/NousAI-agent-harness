@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url'
 import { mergeConfig } from 'vite'
 import type { Plugin, UserConfig } from 'vite'
 import base from '../web/vite.config.ts'
+import { productWebBundleIsolation } from '../web/product-isolation.ts'
 
 const here = (rel: string): string => fileURLToPath(new URL(rel, import.meta.url))
 
@@ -42,8 +43,20 @@ if (!Array.isArray(baseAlias)) throw new Error('web-nousai: expected the stock c
 // ships no worker preview, so the input is replaced below and that plugin is
 // dropped here (plugin arrays concatenate under mergeConfig, so it must not
 // reach the merge).
-const basePlugins = (baseConfig.plugins ?? []).filter(
-  plugin => !(typeof plugin === 'object' && plugin !== null && 'name' in plugin && plugin.name === 'dsh-emit-preview-page'),
+//
+// The product-isolation pair is dropped for a different reason: it is
+// constructed in the stock config with webRoot = apps/web, and every check it
+// makes resolves against that root — the emitted index.html's original input,
+// asset original file names, and public/ references. Under this build the root
+// is apps/web-nousai, so the inherited instance fails on the first assertion
+// ("emitted index.html is missing its original HTML input"). It is re-added to
+// the overlay below, rebound to this directory.
+//
+// .flat() is required: productWebBundleIsolation returns an array of two
+// plugins, and a nested array carries no `name` for the filter to match.
+const basePlugins = (baseConfig.plugins ?? []).flat(Infinity).filter(
+  plugin => !(typeof plugin === 'object' && plugin !== null && 'name' in plugin
+    && (plugin.name === 'dsh-emit-preview-page' || String(plugin.name).startsWith('dsh-product-web-'))),
 )
 
 const merged: UserConfig = mergeConfig(
@@ -65,7 +78,7 @@ const merged: UserConfig = mergeConfig(
   {
     root: here('.'),
     publicDir: here('./public'),
-    plugins: [nousaiBootWordmark()],
+    plugins: [nousaiBootWordmark(), ...productWebBundleIsolation(here('../..'), here('.'))],
     build: {
       outDir: here('./dist'),
       emptyOutDir: true,
