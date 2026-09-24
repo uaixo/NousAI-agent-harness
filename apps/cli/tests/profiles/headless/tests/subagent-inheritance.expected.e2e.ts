@@ -144,7 +144,7 @@ describe('parent-only override inheritance snapshot', () => {
             data?: { source?: { kind?: string }; content?: Array<{ type?: string; text?: unknown }> }
           }
           if (record.type !== 'user/message'
-            || record.data?.source?.kind !== 'runtime-context') return []
+            || record.data?.source?.kind !== 'Runtime context') return []
           return record.data.content?.flatMap(block => block.type === 'text' && typeof block.text === 'string' ? [block.text] : []) ?? []
         })
         const policyContexts = [...runtimeContexts(parent), ...runtimeContexts(child)]

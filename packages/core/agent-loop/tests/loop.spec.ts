@@ -695,7 +695,7 @@ describe('agent loop', () => {
     const agent = await ctx.agentLoop.create(SessionId('a-runtime-context'), { provider: 'mock', model: 'mock' })
     const contextEvents = () => agent.session.snapshotEvents().flatMap(event =>
       event.type === 'user/message'
-        && event.data.source.kind === 'runtime-context'
+        && event.data.source.kind === 'Runtime context'
         ? [event]
         : [])
 
@@ -748,7 +748,7 @@ describe('agent loop', () => {
     await waitForIdle(ctx, agent)
     const contextEvent = agent.session.snapshotEvents().find(event =>
       event.type === 'user/message'
-      && event.data.source.kind === 'runtime-context')
+      && event.data.source.kind === 'Runtime context')
     if (contextEvent?.type !== 'user/message') throw new Error('first turn did not materialize runtime context')
     agent.session.append('user/message', createUserMessage({
       content: [{ type: 'text', text: 'compacted summary' }],
@@ -762,12 +762,12 @@ describe('agent loop', () => {
     await waitForIdle(ctx, agent)
     const runtimeContexts = agent.session.snapshotEvents().flatMap(event =>
       event.type === 'user/message'
-        && event.data.source.kind === 'runtime-context'
+        && event.data.source.kind === 'Runtime context'
         ? [event]
         : [])
     expect(runtimeContexts).toHaveLength(2)
     expect(adapter.requests[1]?.messages.some(message =>
-      message.role === 'user' && message.source?.kind === 'runtime-context')).toBe(true)
+      message.role === 'user' && message.source?.kind === 'Runtime context')).toBe(true)
   })
 
   it('clears compacted runtime context after the active set becomes empty', async () => {
@@ -780,7 +780,7 @@ describe('agent loop', () => {
     await waitForIdle(ctx, agent)
     const contextEvent = agent.session.snapshotEvents().find(event =>
       event.type === 'user/message'
-      && event.data.source.kind === 'runtime-context')
+      && event.data.source.kind === 'Runtime context')
     if (contextEvent?.type !== 'user/message') throw new Error('first turn did not materialize runtime context')
     agent.session.append('user/message', createUserMessage({
       content: [{ type: 'text', text: 'summary retaining old mode: read-only' }],
@@ -794,7 +794,7 @@ describe('agent loop', () => {
     send(agent, 'after compaction')
     await waitForIdle(ctx, agent)
     const clearing = adapter.requests[1]?.messages.find(message =>
-      message.role === 'user' && message.source?.kind === 'runtime-context')
+      message.role === 'user' && message.source?.kind === 'Runtime context')
     expect(clearing?.content).toEqual([{
       type: 'text',
       text: 'Current runtime context: none. Earlier runtime-context snapshots no longer apply.',
@@ -820,7 +820,7 @@ describe('agent loop', () => {
     send(agent, 'after compaction')
     await waitForIdle(ctx, agent)
     expect(adapter.requests[0]?.messages.some(message =>
-      message.role === 'user' && message.source?.kind === 'runtime-context')).toBe(false)
+      message.role === 'user' && message.source?.kind === 'Runtime context')).toBe(false)
   })
 
   it('replaces a malformed retained runtime-context message with the current complete snapshot', async () => {
@@ -830,14 +830,14 @@ describe('agent loop', () => {
     const agent = await ctx.agentLoop.create(SessionId('a-runtime-context-malformed'), { provider: 'mock', model: 'mock' })
     agent.session.append('user/message', createUserMessage({
       content: [{ type: 'text', text: 'broken' }, { type: 'text', text: 'snapshot' }],
-      source: { kind: 'runtime-context' },
+      source: { kind: 'Runtime context' },
     }), { surfaceOp: 'append' })
 
     send(agent, 'repair context')
     await waitForIdle(ctx, agent)
     const runtimeContexts = agent.session.snapshotEvents().flatMap(event =>
       event.type === 'user/message'
-        && event.data.source.kind === 'runtime-context'
+        && event.data.source.kind === 'Runtime context'
         ? [event]
         : [])
     expect(runtimeContexts).toHaveLength(2)

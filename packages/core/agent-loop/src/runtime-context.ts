@@ -12,21 +12,31 @@ import { isReplacementSurfaceEvent } from '@deepseek-ai/dsh-session'
 import type { Context } from '@deepseek-ai/cordis'
 declare module '@deepseek-ai/dsh-llm' {
   interface MessageSourceMap {
+    'runtime-context': { kind: 'runtime-context' } & ContextFormed
+    /**
+     * The kind this fork writes for the same projection. Readers keep the message
+     * and its JSON without this producer, and the kind carries no validation,
+     * replay, or authority requirement; only this projection reads it, to skip a
+     * repeated injection.
+     * @persistenceAttribution
+     */
     'Runtime context': { kind: 'Runtime context' } & ContextFormed
   }
 }
 
-// This projection's durable source kind: `isOwned` matches it in the log, and a
-// build that knows nothing more about the kind renders it verbatim as the row's
-// producer label. Editing it invalidates every recorded fixture carrying the old
-// value, and the released-V3 lift in `dsh-session-format-v3-to-v4` must keep
-// naming the spelling those fixtures carry
+// The kind this projection writes. A build that knows nothing more about the kind
+// renders it verbatim as the row's producer label. Editing it invalidates every
+// recorded fixture carrying the old value, and the released-V3 lift in
+// `dsh-session-format-v3-to-v4` must keep naming the spelling those fixtures carry
 // (see .agents/notes/implemented/feature/2026-08-15-runtime-context-producer-name.md).
 const SOURCE = 'Runtime context'
+// The kind upstream writes for this projection, carried by every log and fixture
+// recorded from an upstream build.
+const RELEASED_SOURCE = 'runtime-context'
 const CLEARED = 'Current runtime context: none. Earlier runtime-context snapshots no longer apply.'
 
 function isOwned(message: UserMessage): boolean {
-  return message.source.kind === SOURCE
+  return message.source.kind === SOURCE || message.source.kind === RELEASED_SOURCE
 }
 
 function textOf(message: Message): string | undefined {

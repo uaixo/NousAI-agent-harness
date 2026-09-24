@@ -172,7 +172,7 @@ describe('in-process policy inheritance', () => {
       )
       const runtimeContext = child.session.snapshotEvents().find(
         (event): event is SessionEvent<'user/message'> => event.type === 'user/message'
-          && event.data.source.kind === 'runtime-context',
+          && event.data.source.kind === 'Runtime context',
       )
       if (request === undefined || systemNode === undefined || runtimeContext === undefined) {
         throw new Error('child request lacks its system node or runtime policy context')
