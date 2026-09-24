@@ -6,20 +6,27 @@
  */
 
 import { createSystemMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
-import type { ContextSnapshotSection, Message } from '@deepseek-ai/dsh-llm'
+import type { ContextFormed, ContextSnapshotSection, Message } from '@deepseek-ai/dsh-llm'
 import type { Session, SessionEvent, SessionSeq, SurfaceIntent, SystemMessage, UserMessage } from '@deepseek-ai/dsh-session'
 import { isReplacementSurfaceEvent } from '@deepseek-ai/dsh-session'
 import type { Context } from '@deepseek-ai/cordis'
+declare module '@deepseek-ai/dsh-llm' {
+  interface MessageSourceMap {
+    'Runtime context': { kind: 'Runtime context' } & ContextFormed
+  }
+}
 
-// Serves two roles at once: the producer name transcripts render verbatim, and
-// this projection's durable identity, which `isOwned` matches in the log. Editing
-// it is user-visible and invalidates every recorded fixture carrying the old value
+// This projection's durable source kind: `isOwned` matches it in the log, and a
+// build that knows nothing more about the kind renders it verbatim as the row's
+// producer label. Editing it invalidates every recorded fixture carrying the old
+// value, and the released-V3 lift in `dsh-session-format-v3-to-v4` must keep
+// naming the spelling those fixtures carry
 // (see .agents/notes/implemented/feature/2026-08-15-runtime-context-producer-name.md).
 const SOURCE = 'Runtime context'
 const CLEARED = 'Current runtime context: none. Earlier runtime-context snapshots no longer apply.'
 
 function isOwned(message: UserMessage): boolean {
-  return message.source.kind === 'plugin' && message.source.plugin === SOURCE
+  return message.source.kind === SOURCE
 }
 
 function textOf(message: Message): string | undefined {
@@ -88,7 +95,7 @@ export class SystemPromptProjection {
     const nodes = this.systemNodes()
     const head = nodes[0]
     if (head === undefined) {
-      return [{ message: createSystemMessage(rendered, SOURCE), intent: { surfaceOp: 'append' } }]
+      return [{ message: createSystemMessage(rendered), intent: { surfaceOp: 'append' } }]
     }
     const latest = nodes.findLast(node => node.text !== '') ?? head
     if (!input.inHistory || input.startsSeries || rendered.length === 0) {
@@ -98,12 +105,12 @@ export class SystemPromptProjection {
       return updates
     }
     if (latest.text === rendered) return []
-    return [{ message: createSystemMessage(rendered, SOURCE), intent: { surfaceOp: 'append' } }]
+    return [{ message: createSystemMessage(rendered), intent: { surfaceOp: 'append' } }]
   }
 
   private replace(seq: SessionSeq, text: string): SystemPromptCommit {
     return {
-      message: createSystemMessage(text, SOURCE),
+      message: createSystemMessage(text),
       intent: { surfaceOp: { op: 'replace', startSeq: seq, endSeq: seq }, sourceEventSeqs: [seq] },
     }
   }
@@ -156,8 +163,8 @@ export class RuntimeContextProjection {
       content: [{ type: 'text', text: snapshot }],
       // The cleared marker has no contributions left to attribute.
       source: sections.length === 0
-        ? { kind: 'plugin', plugin: SOURCE }
-        : { kind: 'plugin', plugin: SOURCE, form: 'snapshot', sections },
+        ? { kind: SOURCE }
+        : { kind: SOURCE, form: 'snapshot', sections },
     })
   }
 }

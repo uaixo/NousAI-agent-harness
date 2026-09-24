@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-web-frontend-nousai",
   "description": "NousAI-branded web application entry: the apps/web shell rebuilt with NousAI page identity and NousAI brand marks served as the ui-primitives platform module; dist/ served by the dsh-nousai-web-app bundle",
-  "version": "0.1.6-alpha.2",
+  "version": "0.1.7-rc.1",
   "publishConfig": {
     "access": "public"
   },
@@ -25,12 +25,12 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@deepseek-ai/dsh-client-web": "workspace:^",
+    "@deepseek-ai/dsh-client-web": "workspace:*",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-client-ui-primitives": "workspace:^",
+    "@deepseek-ai/dsh-client-ui-primitives": "workspace:*",
     "@types/node": "^22.0.0",
     "@types/react": "~18.3.1",
     "typescript": "^6.0.3",

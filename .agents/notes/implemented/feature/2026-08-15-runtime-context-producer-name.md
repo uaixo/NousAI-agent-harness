@@ -22,7 +22,7 @@ This is the remedy the [context-source marks decision](../../archived/feature/20
 
 ## Alternatives considered
 
-**Map the id to a display name in the client.** A `plugin === '@deepseek-ai/dsh-system-prompt' → 'Runtime context'` case in `contextProvenance` is the smallest possible diff and touches no fixture. It is also the one option the context-source decision rules out by name: the client keeps no table of producer ids, because such a table drifts on every rename, needs a client release per producer, and cannot name a producer from a log this build has never seen.
+**Map the id to a display name in the client.** A `plugin === '@deepseek-ai/dsh-system-prompt' → 'Runtime context'` case in `contextProducer` is the smallest possible diff and touches no fixture. It is also the one option the context-source decision rules out by name: the client keeps no table of producer ids, because such a table drifts on every rename, needs a client release per producer, and cannot name a producer from a log this build has never seen.
 
 **Add a separate human-label field to the `plugin` source.** Keeping the id durable and rendering a new optional `label` beside it preserves the field's "plugin id" reading. It widens the durable `MessageSourceMap` vocabulary for one producer, and it does not avoid the fixture churn it would be chosen to avoid: recorded logs written before the field exists carry no label, so every golden still re-renders the npm id. More durable surface, same edit, worse ratio.
 

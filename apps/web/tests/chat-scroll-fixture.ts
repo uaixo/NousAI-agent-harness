@@ -69,10 +69,7 @@ function appendSystemPrompt(session: Session, turn: number, step: number): void 
   session.append('system/message', {
     turn,
     step,
-    message: createSystemMessage(
-      'Synthetic chat-scroll system prompt.',
-      'Runtime context',
-    ),
+    message: createSystemMessage('Synthetic chat-scroll system prompt.'),
   }, { surfaceOp: 'append' })
 }
 

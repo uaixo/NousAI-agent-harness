@@ -22,7 +22,7 @@ Status: implemented
 
 ## 考虑过的替代方案
 
-**在客户端把 id 映射为展示名称。** 在 `contextProvenance` 里写一个 `plugin === '@deepseek-ai/dsh-system-prompt' → 'Runtime context'` 分支，是可能的最小改动，且不触碰任何 fixture。它同时也是上下文来源决策明确排除的那一个选项：客户端不保存生产者 id 表，因为这类表会在每次重命名时失准，每新增一个生产者都要发布客户端，而且对本构建从未见过的日志根本无法命名。
+**在客户端把 id 映射为展示名称。** 在 `contextProducer` 里写一个 `plugin === '@deepseek-ai/dsh-system-prompt' → 'Runtime context'` 分支，是可能的最小改动，且不触碰任何 fixture。它同时也是上下文来源决策明确排除的那一个选项：客户端不保存生产者 id 表，因为这类表会在每次重命名时失准，每新增一个生产者都要发布客户端，而且对本构建从未见过的日志根本无法命名。
 
 **在 `plugin` 来源上新增独立的人类可读标签字段。** 保留 id 的持久性、在其旁渲染一个新的可选 `label`，可以保住该字段“插件 id”的读法。但这为一个生产者拓宽了持久的 `MessageSourceMap` 词汇表，而且并不能避免它本该避免的 fixture 变更：在该字段存在之前写下的日志不携带 label，于是所有 golden 仍会重新渲染出那个 npm id。持久面更大，改动量相同，性价比更差。
 
