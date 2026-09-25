@@ -14,7 +14,7 @@ Status: implemented
 
 `RuntimeContextProjection` 记录 `Runtime context` 作为自己的生产者名称，于是 transcript 中该行读作 `上下文注入 · Runtime context`。
 
-这个名称是 [`runtime-context.ts`](../../../../packages/core/agent-loop/src/runtime-context.ts) 中的一个常量，同时承担两个角色：客户端逐字渲染的面向人的生产者名称，以及该 projection 的持久身份——`isOwned` 靠它找到自己必须取代的那份快照。两个角色天然同步，因为 projection 只读取一个字符串；所有携带旧值的既有 fixture（测试前置数据）也随之一同更新。另有一个生产者重述同一值并随之变动：[v2→v3 会话迁移](../../../../packages/session/session-format-v2-to-v3/src/migration.ts)用它标记自己合成的系统消息头，使迁移后的消息头仍归该 projection 所有。
+这个名称就是 [`runtime-context.ts`](../../../../packages/core/agent-loop/src/runtime-context.ts) 写出的持久来源 kind，而对某个 kind 一无所知的构建会逐字渲染它，因此同一个字符串既是面向人的生产者名称，也是 `isOwned` 用来找到自己必须取代的那份快照的身份。上游的 `runtime-context` kind 与它并列保留声明，`isOwned` 同时匹配两者，因此上游构建写下的日志仍保住既有快照，而不会再多出一份。新增成员带有 `@persistenceAttribution`：没有该生产者的读取器仍保留消息及其 JSON，且该 kind 不引入校验、回放或权限要求。正是这一标记让该新增成为[同版本持久化变更](../../../../docs/persistence-changes/2026-09-24-fork-runtime-context-kind.zh.md)，而非 Session 格式升版。另有两个生产者重述该值：[v2→v3 会话迁移](../../../../packages/session/session-format-v2-to-v3/src/migration.ts)用它标记自己合成的系统消息头，[v3→v4 提升](../../../../packages/session/session-format-v3-to-v4/src/sources.ts)则把记录了该名称的日志映射到这个 kind。
 
 这正是 [上下文来源标注决策](../../archived/feature/2026-08-04-web-context-source-and-steer-marks.md) 为这一行指出的补救办法：想要更好标签的生产者，应当在自己的来源字段中记录该标签。它刻意留在生产方一侧。客户端只从持久日志解析生产者名称，不保存任何插件 id 表，因此重命名绝不应当需要发布客户端，恢复的日志或外部日志也必须与实时会话投影出相同结果。
 
@@ -22,7 +22,7 @@ Status: implemented
 
 ## 考虑过的替代方案
 
-**在客户端把 id 映射为展示名称。** 在 `contextProvenance` 里写一个 `plugin === '@deepseek-ai/dsh-system-prompt' → 'Runtime context'` 分支，是可能的最小改动，且不触碰任何 fixture。它同时也是上下文来源决策明确排除的那一个选项：客户端不保存生产者 id 表，因为这类表会在每次重命名时失准，每新增一个生产者都要发布客户端，而且对本构建从未见过的日志根本无法命名。
+**在客户端把 id 映射为展示名称。** 在 `contextProducer` 里写一个 `plugin === '@deepseek-ai/dsh-system-prompt' → 'Runtime context'` 分支，是可能的最小改动，且不触碰任何 fixture。它同时也是上下文来源决策明确排除的那一个选项：客户端不保存生产者 id 表，因为这类表会在每次重命名时失准，每新增一个生产者都要发布客户端，而且对本构建从未见过的日志根本无法命名。
 
 **在 `plugin` 来源上新增独立的人类可读标签字段。** 保留 id 的持久性、在其旁渲染一个新的可选 `label`，可以保住该字段“插件 id”的读法。但这为一个生产者拓宽了持久的 `MessageSourceMap` 词汇表，而且并不能避免它本该避免的 fixture 变更：在该字段存在之前写下的日志不携带 label，于是所有 golden 仍会重新渲染出那个 npm id。持久面更大，改动量相同，性价比更差。
 
@@ -34,13 +34,13 @@ Status: implemented
 
 ## 测试
 
-- `packages/core/agent-loop` 单元覆盖固定了新建快照上记录的来源，以及恢复、取代和清除既有快照的 `isOwned` 回放路径。
+- `packages/core/agent-loop` 单元覆盖固定了新建快照上记录的来源，以及恢复、取代和清除既有快照的 `isOwned` 回放路径，并同时覆盖写出的 kind 与上游的 kind。
 - `packages/client/ui-chat` jsdom 覆盖固定了该行渲染出的可访问名称。
 - 无密钥的组装式 Web golden，以及 ACP、headless、JSON-RPC 和 Python SDK 的会话日志都携带新的生产者名称，因此证明它的是组装后的 transcript，而不只是组件测试。
 
 ## 后果
 
 - 产品中不再有任何生产者记录 `@scope/package` 形态的名称；仍呈现包名形态的只剩下带 `dsh-` 前缀的朴素名称（`dsh-compaction-basic`、`dsh-session-title-llm`）。
-- 该名称是持久数据，因此本次改动之前写下的会话日志保留旧值。`isOwned` 不会匹配它：projection 会把这类会话视为没有既有快照，并在下一轮追加一份当前快照，被取代的那一行继续渲染旧名称。已发布的 Session JSONL 遵循相邻迁移，从不改写已提交的行，因此没有任何迁移会触及这个值。
+- 该名称是持久数据。上游构建写下的日志记录 `runtime-context`，`isOwned` 同样匹配它，因此那类会话保住既有快照，其行继续渲染上游名称。已发布的 Session JSONL 遵循相邻迁移，从不改写已提交的行，因此没有任何迁移会触及已记录的值；v3→v4 提升在发布后继代时把两种已记录的生产者名称都映射到某个 format 4 kind。
 - 记录下来的生产者名称如今是面向读者的字符串。再次修改它就是一次 transcript 可见的编辑，并且会带动所有既有 fixture 一起变更。
 - 该名称随录制 fixture、期望文件、每个写出它的生产者，以及每个喂给实时 projection 或渲染器的种子数据（Web e2e 历史、benchmark 工作负载、快照 harness 种子）一起变动，因为不归属的种子会让 `isOwned` 追加一份新快照而不是取代被种入的那份。单元 spec 中只在对象之间相互比较的合成来源保持原作者写法（上游编写的文件保留上游名称）：改动它们不会改变任何可观察行为，只会扩大每次上游同步的合并面。引用上游名称的上游 note 描述的是上游；本 note 是 fork 记录值的权威来源。

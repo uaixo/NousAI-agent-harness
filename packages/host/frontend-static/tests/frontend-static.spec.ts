@@ -114,7 +114,7 @@ describe('real Loader composition', () => {
     const launchUrl = loaded.connection.authenticatedUrl(`http://127.0.0.1:${String(port)}`)
     const exchange = await fetch(launchUrl, { redirect: 'manual' })
     expect(exchange.status).toBe(303)
-    expect(exchange.headers.get('location')).toBe('/')
+    expect(exchange.headers.get('location')).toBe('./')
     const setCookie = exchange.headers.get('set-cookie')
     if (setCookie === null) throw new Error('authenticated frontend did not set a cookie')
     const cookie = setCookie.split(';', 1)[0]!
@@ -154,6 +154,11 @@ describe('real Loader composition', () => {
 
     // Only the root and index path render index.html through registered taps.
     const untap = server.tapIndex(html => html.replace('<head>', '<head><script>window.__T__=1</script>'))
+    // A plugin row stands in for the Host's plugin-resource rows: the base the
+    // shell inserts must precede it, not merely exist.
+    const offRows = loaded.on('webserver/index-inject', (rows) => {
+      rows.push({ kind: 'script-preload', src: 'plugins/boot.js' })
+    })
     for (const path of ['/', '/index.html', '/?view=test']) {
       const got = await request(port, path, authenticated())
       expect(got.status).toBe(200)
@@ -163,7 +168,15 @@ describe('real Loader composition', () => {
       // The index is composed per request, so it must always be revalidated;
       // a heuristically cached copy pins the client to stale plugin revisions.
       expect(got.cacheControl).toBe('no-cache')
+      // The served document carries the entry-directory base exactly once, and
+      // it precedes every injected row and tap markup, so the shell's
+      // app-owned routes and the Host's resource rows resolve under one mount.
+      expect(got.body.match(/<base\b/g)).toHaveLength(1)
+      const base = got.body.indexOf('<base href="./">')
+      expect(base).toBeLessThan(got.body.indexOf('<link rel="preload" as="script" href="plugins/boot.js">'))
+      expect(base).toBeLessThan(got.body.indexOf('<script>window.__T__=1</script>'))
     }
+    offRows()
     expect(await request(port, '/', authenticated({ method: 'HEAD' }))).toEqual({
       status: 200,
       type: 'text/html; charset=utf-8',
