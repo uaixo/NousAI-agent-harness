@@ -16,11 +16,12 @@ const RECORDED = 'runtime-context'
 // The kind this fork writes.
 const WRITTEN = 'Runtime context'
 
+// Each kind carries its own `ContextFormed` variants, so the two spellings are
+// built separately: a `source` typed as the union of both kinds matches none of them.
 function contextMessage(text: string, kind: typeof RECORDED | typeof WRITTEN = RECORDED) {
-  return createUserMessage({
-    content: [{ type: 'text', text }],
-    source: { kind },
-  })
+  return kind === WRITTEN
+    ? createUserMessage({ content: [{ type: 'text', text }], source: { kind: WRITTEN } })
+    : createUserMessage({ content: [{ type: 'text', text }], source: { kind: RECORDED } })
 }
 
 describe('RuntimeContextProjection', () => {
