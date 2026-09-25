@@ -12,11 +12,16 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render } from '@testing-library/react'
 import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { NousAiBrandMark, NousAiBrandName } from '../src/client/Brand.tsx'
-import { NousAiWelcomeSkip } from '../src/client/NousAiWelcomeSkip.tsx'
+import { NousAiWelcomeSkip, type NousAiWelcomeSkipProps } from '../src/client/NousAiWelcomeSkip.tsx'
 import { apply, inject } from '../src/client/index.ts'
 import { apply as nodeApply } from '../src/index.ts'
 
 afterEach(cleanup)
+
+/** The step reads no global slot sources; any call fails the test. */
+function unusedHook(): never {
+  throw new Error('NousAiWelcomeSkip does not read global slot sources')
+}
 
 /** A stand-in for the stock ui-settings-models notice at the default priority. */
 function StockNotice(): null {
@@ -81,9 +86,11 @@ describe('ui-nousai-brand browser plugin', () => {
 
   it('completes the coordinator step once and renders nothing', () => {
     const complete = vi.fn()
-    const props = {
+    const props: NousAiWelcomeSkipProps = {
       stepId: 'welcome-notice', complete, openSection: vi.fn(),
-    } as unknown as Parameters<typeof NousAiWelcomeSkip>[0]
+      usePanelInfo: unusedHook, useSessions: unusedHook, useSessionStatus: unusedHook, useSessionRetainInfo: unusedHook,
+      useWorkspaces: unusedHook, useResource: unusedHook,
+    }
     const view = render(<NousAiWelcomeSkip {...props} />)
     expect(view.container.innerHTML).toBe('')
     expect(complete).toHaveBeenCalledTimes(1)
