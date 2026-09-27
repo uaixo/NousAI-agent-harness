@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-15-default-branch-ci-triggers.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-08-15-default-branch-ci-triggers.md
-2026-08-15-default-branch-ci-triggers.md: 0caeec53ed43b7f4465d78fa5ea73b745cbe8f5c
-2026-08-15-default-branch-ci-triggers.zh.md: 5a5c1a6b6b060ff1937eed7360627e1b3bbe7d00
+/agent-note-default-branch-ci-triggers-across-the-branch-rename:
+  en: 5c8d866240ac9a5c
+  zh: 64a1c1bbe4c8117b
+/agent-note-default-branch-ci-triggers-across-the-branch-rename/problem:
+  en: ae2e12bc6d6533da
+  zh: 2707e6826bfb2fd5
+/agent-note-default-branch-ci-triggers-across-the-branch-rename/decision:
+  en: e26208a6fe8e40ea
+  zh: 52a55b8b12a64931
+/agent-note-default-branch-ci-triggers-across-the-branch-rename/alternatives-considered:
+  en: 92a46697fea91884
+  zh: c4ece4c0e9c8767f
+/agent-note-default-branch-ci-triggers-across-the-branch-rename/consequences:
+  en: 8693cf00c5e1d182
+  zh: 8b0ef20679886d7c

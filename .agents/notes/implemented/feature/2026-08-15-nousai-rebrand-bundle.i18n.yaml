@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-15-nousai-rebrand-bundle.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-15-nousai-rebrand-bundle.md
-2026-08-15-nousai-rebrand-bundle.md: b33e28fcc3629ed72a721902140a1d814a5af4b3
-2026-08-15-nousai-rebrand-bundle.zh.md: 2a1347e03ba0fac0442d2d43699f62f35c1220cf
+/agent-note-nousai-rebrand-as-an-installable-bundle:
+  en: 4b70c63439aef434
+  zh: 351c15769c19b793
+/agent-note-nousai-rebrand-as-an-installable-bundle/problem:
+  en: 428ca9b4fb0f2825
+  zh: 2faef47bcd574a67
+/agent-note-nousai-rebrand-as-an-installable-bundle/decision:
+  en: 54b93e87247183dc
+  zh: 6e82441edba534df
+/agent-note-nousai-rebrand-as-an-installable-bundle/alternatives-considered:
+  en: fb5b4b1306143100
+  zh: d3c38ab08c76fc80
+/agent-note-nousai-rebrand-as-an-installable-bundle/consequences:
+  en: 4d9a60b97a5345d6
+  zh: 0ff3ee7a5cb86c3d
+/agent-note-nousai-rebrand-as-an-installable-bundle/testing:
+  en: 58d6843db9bcc1e1
+  zh: ef718c2a6ba85e79

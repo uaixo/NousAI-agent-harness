@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-15-runtime-context-producer-name.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-15-runtime-context-producer-name.md
-2026-08-15-runtime-context-producer-name.md: 672e09bb13041b33e205f4e850e3233469a74b3b
-2026-08-15-runtime-context-producer-name.zh.md: 39d290164f6063a0e8b921c8c44beefe190b2c8b
+/agent-note-the-runtime-context-snapshot-names-itself-for-readers:
+  en: bd7697c240718eeb
+  zh: f69267ec01808b1d
+/agent-note-the-runtime-context-snapshot-names-itself-for-readers/problem:
+  en: 89baf1e57ca16a82
+  zh: f0117b75fd071c2e
+/agent-note-the-runtime-context-snapshot-names-itself-for-readers/decision:
+  en: 7cc634283c46223e
+  zh: 53fbb22364bf838d
+/agent-note-the-runtime-context-snapshot-names-itself-for-readers/alternatives-considered:
+  en: e154f35f8ff3952b
+  zh: 70645fada6452af4
+/agent-note-the-runtime-context-snapshot-names-itself-for-readers/testing:
+  en: 5e0acd44e3b4ca73
+  zh: 4a302e45cab1d803
+/agent-note-the-runtime-context-snapshot-names-itself-for-readers/consequences:
+  en: 00f4b1bc17d525e5
+  zh: 3e32fbc46a45a386
