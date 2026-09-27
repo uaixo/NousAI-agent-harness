@@ -8,6 +8,10 @@
 # The image ships the whole workspace including devDependencies: dsh resolves
 # its own profile bundles out of its installation tree, and `dsh plugin install`
 # shells out to pnpm, so neither can be pruned away without breaking boot.
+#
+# Build from the repository root, passing the checkout's commit:
+#
+#   podman build --build-arg DSH_CLIENT_COMMIT_HASH="$(git rev-parse HEAD)" .
 
 FROM node:24-bookworm-slim AS build
 
@@ -21,6 +25,16 @@ RUN apt-get update \
 RUN npm install -g pnpm@11.7.0
 
 WORKDIR /app
+
+# build:lib's Desktop bundle step runs `git rev-parse HEAD` when neither
+# DSH_CLIENT_VERSION nor DSH_CLIENT_COMMIT_HASH is set, and .dockerignore
+# leaves .git out of the build context, so the commit arrives as this build
+# argument. Checking it here stops a build without it before pnpm install
+# rather than after.
+ARG DSH_CLIENT_COMMIT_HASH
+RUN test -n "${DSH_CLIENT_COMMIT_HASH:-}" \
+ || (echo 'FATAL: build with --build-arg DSH_CLIENT_COMMIT_HASH="$(git rev-parse HEAD)"; .git is not in the build context' >&2; exit 1)
+
 COPY . .
 
 RUN pnpm install --frozen-lockfile

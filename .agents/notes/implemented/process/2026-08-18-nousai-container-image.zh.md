@@ -12,6 +12,8 @@ Status: implemented
 
 一个双阶段 OCI 镜像（`Dockerfile`、`docker/`）在 Podman 与 Docker 下以相同方式构建。构建阶段编译 workspace（先以 `build:native-system` 编译会话写锁所需的 flock 插件，再 `build:lib` + `build:web:nousai`），并将 profile bundle 图解析进 `/opt/dsh-seed` 的一次性 `DSH_HOME` 种子：profile manifest（`docker/profile-package.json`）在运行 `dsh plugin install` *之前*写入，使默认 profile 脚手架不可能发生；三个 fork 包全部显式链接（`link:/app/...`），因为 `workspace:^` 离开 workspace 后即失效。若任一 NousAI 包未链接进种子 profile，构建即失败——两种静默失败模式都被转换为响亮的构建失败。
 
+构建上下文排除 `.git`，而 `build:lib` 的 Desktop 打包步骤在 `DSH_CLIENT_VERSION` 与 `DSH_CLIENT_COMMIT_HASH` 均未设置时会运行 `git rev-parse HEAD`，因此构建阶段以必需的构建参数接收源码 commit：`podman build --build-arg DSH_CLIENT_COMMIT_HASH="$(git rev-parse HEAD)" .`。参数缺失或为空时，构建在复制源码之前即停止；`scripts/client-build-environment.ts` 会拒绝不是 7 到 40 位十六进制 commit hash 的值。
+
 运行阶段携带构建好的 `/app` 与种子。`docker/entrypoint.sh` 仅在 profile 缺失时把种子复制进挂载的 `/data` 卷，仅在对应文件缺失时写入 `webserver` 绑定 patch（`0.0.0.0:3080`）与 LM Studio provider 设置文件，随后针对当前镜像重新链接 profile（失败时告警可见、启动继续），最后 exec `dsh web`。CLI 对 `--host 0.0.0.0` 的拒绝保持不变；profile patch 是 schema 合法的通道，其守护的暴露风险通过仅发布到环回地址（`-p 127.0.0.1:3080:3080`）恢复。在启用 SELinux 的宿主上（包括 `podman machine` 背后的 Fedora CoreOS 虚拟机）卷挂载需要 `:Z`；缺少它时，复用同一卷的第二个容器会获得不同的 MCS 类别，种子复制死于 `Permission denied`。
 
 镜像携带包含 devDependencies 的完整 workspace：dsh 从自身安装树解析 profile bundle，`dsh plugin install` 又会调用 pnpm，两者都无法在裁剪后存活。构建上下文排除根目录 `.env`——`DEEPSEEK_API_KEY` 的文档化存放处——使 `COPY . .` 不可能把凭据烤进镜像。
@@ -29,6 +31,10 @@ Status: implemented
 **用 `--privileged` 恢复 bwrap 沙箱层级。** 以放弃容器隔离换取容器内隔离——方向错误；`--security-opt seccomp=unconfined` 也无济于事。
 
 **通过 CLI 旗标传入绑定。** `--host 0.0.0.0` 被设计性拒绝（`packages/bundle/web-app/src/startup.ts`）；profile patch 是受支持的通道，并让该拒绝对非容器使用继续有意义。
+
+**在构建上下文中包含 `.git`。** 构建命令可保持为 `podman build .`，但每次构建上下文都会加入完整的 Git 历史；而 `git worktree` 创建的 checkout 中 `.git` 是指向上下文之外的文件，其构建仍会失败。
+
+**改为在构建步骤中设置 `DSH_CLIENT_VERSION`。** 这样 Desktop 打包步骤会跳过 Git，普通的 `podman build .` 即可工作；但客户端 bundle 会嵌入版本号，使通用设置显示当前版本行，且镜像不记录 commit。
 
 ## Consequences
 
