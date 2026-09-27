@@ -12,6 +12,8 @@ Deploying the NousAI web surface means reproducing a working monorepo checkout: 
 
 A two-stage OCI image (`Dockerfile`, `docker/`) builds identically under Podman and Docker. The build stage compiles the workspace (`build:native-system` for the flock addon that session write locks require, then `build:lib` + `build:web:nousai`) and resolves the profile bundle graph into a throwaway `DSH_HOME` seed at `/opt/dsh-seed`, writing the profile manifest (`docker/profile-package.json`) *before* running `dsh plugin install` so the default-profile scaffold can never occur, and linking all three fork packages explicitly (`link:/app/...`) because `workspace:^` does not survive leaving the workspace. The build fails unless every NousAI package is linked into the seeded profile — both silent failure modes are converted to loud build failures.
 
+The build context excludes `.git`, and `build:lib`'s Desktop bundle step runs `git rev-parse HEAD` when neither `DSH_CLIENT_VERSION` nor `DSH_CLIENT_COMMIT_HASH` is set, so the build stage takes the source commit as a required build argument: `podman build --build-arg DSH_CLIENT_COMMIT_HASH="$(git rev-parse HEAD)" .`. A missing or empty argument stops the build before the source is copied in; `scripts/client-build-environment.ts` rejects a value that is not a 7 to 40 character hexadecimal commit hash.
+
 The runtime stage carries the built `/app` and the seed. `docker/entrypoint.sh` copies the seed into the mounted `/data` volume only when the profile is absent, writes the `webserver` bind patch (`0.0.0.0:3080`) and an LM Studio provider settings file only when those files are absent, re-links the profile against the current image (visible warning, boot continues on failure), and execs `dsh web`. The CLI's `--host 0.0.0.0` rejection stands; the profile patch is the schema-legal route, and the exposure it guards against is restored by publishing to loopback only (`-p 127.0.0.1:3080:3080`). On SELinux-enforcing hosts (including `podman machine`'s Fedora CoreOS VM) the volume mount needs `:Z`; without it a second container reusing the volume draws a different MCS category and the seed copy fails on `Permission denied`.
 
 The image ships the whole workspace including devDependencies: dsh resolves its profile bundles out of its installation tree, and `dsh plugin install` shells out to pnpm, so neither survives pruning. The build context excludes root `.env` — the documented `DEEPSEEK_API_KEY` home — so `COPY . .` cannot bake credentials into the image.
@@ -29,6 +31,10 @@ In a rootless container neither Linux sandbox rung works: bwrap cannot create a 
 **`--privileged` to restore the bwrap sandbox rung.** Trades container isolation away to regain in-container isolation — the wrong direction; `--security-opt seccomp=unconfined` does not help.
 
 **Pass the bind through CLI flags.** `--host 0.0.0.0` is rejected by design (`packages/bundle/web-app/src/startup.ts`); the profile patch is the supported route and keeps the rejection meaningful for non-container use.
+
+**Include `.git` in the build context.** Keeps the build command at `podman build .`, but adds the full Git history to every build context, and a checkout created by `git worktree` has a `.git` file that points outside the context, so its build would still fail.
+
+**Set `DSH_CLIENT_VERSION` in the build step instead.** The Desktop bundle step then skips Git, so the plain `podman build .` works, but the client bundles embed the version, so General Settings shows a current-version row, and the image records no commit.
 
 ## Consequences
 

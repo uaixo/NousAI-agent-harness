@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-18-nousai-container-image.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-08-18-nousai-container-image.md
-2026-08-18-nousai-container-image.md: ea428a0dbd96c128f0a140a6fca246c6d77a5aec
-2026-08-18-nousai-container-image.zh.md: b66fa9a463846ec910cae217332544adad540986
+/agent-note-nousai-container-image:
+  en: 04c0336b16db7275
+  zh: deb7f9c139013481
+/agent-note-nousai-container-image/problem:
+  en: 3699c41ef16bbbd6
+  zh: 0ce7b19962d87c83
+/agent-note-nousai-container-image/decision:
+  en: 32e4e38436de87d1
+  zh: e29f33b1386837ca
+/agent-note-nousai-container-image/sandbox-posture:
+  en: f6e95e6b1260e87f
+  zh: 1578796169b9b540
+/agent-note-nousai-container-image/alternatives-considered:
+  en: 390d8f367304137e
+  zh: 71e476ca8a0d5494
+/agent-note-nousai-container-image/consequences:
+  en: b86edb1626cfbf74
+  zh: 80c870a0af79a243
