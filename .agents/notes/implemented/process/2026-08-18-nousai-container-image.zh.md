@@ -14,7 +14,7 @@ Status: implemented
 
 构建上下文排除 `.git`，而 `build:lib` 的 Desktop 打包步骤在 `DSH_CLIENT_VERSION` 与 `DSH_CLIENT_COMMIT_HASH` 均未设置时会运行 `git rev-parse HEAD`，因此构建阶段以必需的构建参数接收源码 commit：`podman build --build-arg DSH_CLIENT_COMMIT_HASH="$(git rev-parse HEAD)" .`。参数缺失或为空时，构建在复制源码之前即停止；`scripts/client-build-environment.ts` 会拒绝不是 7 到 40 位十六进制 commit hash 的值。
 
-运行阶段携带构建好的 `/app` 与种子。`docker/entrypoint.sh` 仅在 profile 缺失时把种子复制进挂载的 `/data` 卷，仅在对应文件缺失时写入 `webserver` 绑定 patch（`0.0.0.0:3080`）与 LM Studio provider 设置文件，随后针对当前镜像重新链接 profile（失败时告警可见、启动继续），最后 exec `dsh web`。CLI 对 `--host 0.0.0.0` 的拒绝保持不变；profile patch 是 schema 合法的通道，其守护的暴露风险通过仅发布到环回地址（`-p 127.0.0.1:3080:3080`）恢复。在启用 SELinux 的宿主上（包括 `podman machine` 背后的 Fedora CoreOS 虚拟机）卷挂载需要 `:Z`；缺少它时，复用同一卷的第二个容器会获得不同的 MCS 类别，种子复制死于 `Permission denied`。
+运行阶段携带构建好的 `/app` 与种子。`docker/entrypoint.sh` 仅在 profile 缺失时把种子复制进挂载的 `/data` 卷，仅在 LM Studio provider 设置文件缺失时写入它，随后针对当前镜像重新链接 profile（失败时告警可见、启动继续），最后 exec `dsh web --host <网卡地址> --port 3080 --public-url $DSH_PUBLIC_URL --no-open`。`webserver` 配置在加载时拒绝一切通配绑定（`0.0.0.0`、`::`），因此 entrypoint 在每次启动时用 Node 解析容器自身的非环回 IPv4 网卡地址，因为引擎每次运行可能分配不同的地址；网络绑定带来的暴露风险通过仅发布到环回地址（`-p 127.0.0.1:3080:3080`）加以约束。`DSH_PUBLIC_URL`（默认 `http://127.0.0.1:3080/`，即文档中的发布映射）是打印的 URL、`DSH_WEB_URL` 与 web-surface 提示所公告的根。由 0.2.1-alpha.2 之前的镜像播种的卷带有绑定 `0.0.0.0` 的 `webserver` patch；entrypoint 在其文本仍为播种文本时删除该 patch，对已被修改的 patch 则不予触碰，后者随后在加载时响亮失败。在启用 SELinux 的宿主上（包括 `podman machine` 背后的 Fedora CoreOS 虚拟机）卷挂载需要 `:Z`；缺少它时，复用同一卷的第二个容器会获得不同的 MCS 类别，种子复制死于 `Permission denied`。
 
 镜像携带包含 devDependencies 的完整 workspace：dsh 从自身安装树解析 profile bundle，`dsh plugin install` 又会调用 pnpm，两者都无法在裁剪后存活。构建上下文排除根目录 `.env`——`DEEPSEEK_API_KEY` 的文档化存放处——使 `COPY . .` 不可能把凭据烤进镜像。
 
@@ -30,7 +30,7 @@ Status: implemented
 
 **用 `--privileged` 恢复 bwrap 沙箱层级。** 以放弃容器隔离换取容器内隔离——方向错误；`--security-opt seccomp=unconfined` 也无济于事。
 
-**通过 CLI 旗标传入绑定。** `--host 0.0.0.0` 被设计性拒绝（`packages/bundle/web-app/src/startup.ts`）；profile patch 是受支持的通道，并让该拒绝对非容器使用继续有意义。
+**用 profile patch 播种 `webserver` 绑定。** 0.2.1-alpha.2 之前的镜像以 `host: '0.0.0.0'` 这样做，这是无需知道容器地址就能触达所有接口的唯一写法。schema 自 0.2.1-alpha.1 起拒绝一切通配地址，而一次性写入卷中的具体地址会在引擎为下一次运行分配不同地址时失效；读取环境变量的 `!!js` 表达式能保持地址最新，却把一个每次启动都变化的值放进了用户拥有的文件。
 
 **在构建上下文中包含 `.git`。** 构建命令可保持为 `podman build .`，但每次构建上下文都会加入完整的 Git 历史；而 `git worktree` 创建的 checkout 中 `.git` 是指向上下文之外的文件，其构建仍会失败。
 
@@ -38,4 +38,4 @@ Status: implemented
 
 ## Consequences
 
-全新卷可离线启动，NousAI 界面由构建期断言保证。在沙箱决策落地之前，容器即安全边界——默认权限模式下 shell 工具以 `SANDBOX_UNAVAILABLE` 失败。默认值以 Podman 优先：Docker 下 `host.containers.internal` 需要覆盖或 `--add-host`（entrypoint 中已注明）。`/data` 下的种子文件仅在缺失时写入，因此用户对 patch、设置与会话的修改在重启与镜像重建后保留；删除 `webserver` patch 行的用户自行拥有由此产生的绑定。
+全新卷可离线启动，NousAI 界面由构建期断言保证。在沙箱决策落地之前，容器即安全边界——默认权限模式下 shell 工具以 `SANDBOX_UNAVAILABLE` 失败。默认值以 Podman 优先：Docker 下 `host.containers.internal` 需要覆盖或 `--add-host`（entrypoint 中已注明）。`/data` 下的种子文件仅在缺失时写入，因此用户对设置文件与会话的修改在重启与镜像重建后保留；绑定与公告根随镜像的 entrypoint 一起更新，`DSH_PUBLIC_URL` 是唯一的部署旋钮。

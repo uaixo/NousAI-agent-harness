@@ -22,7 +22,7 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends python3 make g++ ca-certificates git \
  && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g pnpm@11.7.0
+RUN npm install -g pnpm@11.28.5
 
 WORKDIR /app
 
@@ -77,7 +77,7 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates git bash curl \
  && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g pnpm@11.7.0
+RUN npm install -g pnpm@11.28.5
 
 COPY --from=build /app /app
 COPY --from=build /opt/dsh-seed /opt/dsh-seed
@@ -101,8 +101,9 @@ ENV DSH_HOME=/data \
     NODE_ENV=production
 VOLUME ["/data"]
 
-# Bound to 0.0.0.0 inside the container by the profile patch the entrypoint
-# writes. Publish it to loopback only — `-p 127.0.0.1:3080:3080`.
+# The entrypoint binds the container's own interface address on this port and
+# advertises DSH_PUBLIC_URL (default http://127.0.0.1:3080/). Publish it to
+# loopback only — `-p 127.0.0.1:3080:3080`.
 EXPOSE 3080
 
 WORKDIR /workspace

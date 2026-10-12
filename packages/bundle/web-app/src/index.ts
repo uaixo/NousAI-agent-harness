@@ -5,27 +5,32 @@
  * the built frontend dist (workspace knowledge of this bundle, never user
  * config), mounts the `frontend-static` fallback owner over it, registers the
  * harness-source and web-surface prompt sections, the bash-visible web runtime
- * variable, the process-token URL line, and the default-browser handoff. The
- * model and shell retain the clean URL. App command-line values arrive through
- * the `webStartup` service expressions in the bundle patch.
+ * variable, the process-token URL line, and the default-browser handoff. An
+ * advertised `publicUrl` replaces the published bind-address URL. Non-loopback
+ * HTTP binds trigger an exposure warning. App command-line values arrive
+ * through the `webStartup` service expressions in the bundle patch.
  * @module @deepseek-ai/dsh-web-app
  */
 
 import { spawn, type ChildProcess } from 'node:child_process'
 import { createRequire } from 'node:module'
+import { isIP } from 'node:net'
 import { dirname, join } from 'node:path'
-import { networkInterfaces } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { addHarnessSourceSection, auditStartupEntries } from '@deepseek-ai/dsh-app-boot'
 import type {} from '@deepseek-ai/dsh-client-connection'
 import * as FrontendStatic from '@deepseek-ai/dsh-host-frontend-static'
+import { isLoopbackHost, normalizeBindAddress } from '@deepseek-ai/dsh-host-webserver'
 import { launchedThroughSsh, launchEnvironmentOf } from '@deepseek-ai/dsh-launch-environment'
 import { scrubbedParentEnv } from '@deepseek-ai/dsh-subprocess'
 import type {} from '@deepseek-ai/cordis-plugin-loader'
-import type {} from '@deepseek-ai/dsh-host-webserver'
 import type {} from '@deepseek-ai/dsh-shell-env'
+import { parsePublicUrl } from './public-url.ts'
+
+/** The advertised-root parser, shared with rebranding bundles that restate this plugin's `publicUrl` field. */
+export { parsePublicUrl } from './public-url.ts'
 
 /** Stable Cordis plugin name. */
 export const name = 'web-app'
@@ -33,9 +38,6 @@ export const name = 'web-app'
 /** This dsh installation's root, from either this package's source or built entry. */
 const SOURCE_ROOT = fileURLToPath(new URL('../../../..', import.meta.url))
 const ANNOUNCED_ROOTS = new WeakSet<Context>()
-
-/** Runtime service that releases Web rows after bind-dependent values resolve. */
-const WEB_RUNTIME_SERVICE = 'webRuntime'
 
 /** Services required before the web runtime can mount. */
 export const inject = ['webServer']
@@ -53,33 +55,25 @@ export interface Config {
    * orientation text would be false.
    */
   surfaceContext: boolean
-  /** Explicit `--trusted-host` authorities from this invocation. */
-  trustedHosts: string[]
+  /**
+   * Canonical HTTP(S) root to advertise in the printed and opened URL,
+   * `DSH_WEB_URL`, and the web-surface orientation, e.g.
+   * `https://app.example/ui/`, normalized to end in `/`. Configures no routing
+   * or authentication; see [public deployments](../README.md#public-deployments).
+   * Absent or YAML `null` advertises the bind-address URL.
+   */
+  publicUrl?: string
 }
 
 export const Config: z<Config> = z.object({
   openBrowser: z.boolean().default(true),
   printUrl: z.boolean().default(true),
   surfaceContext: z.boolean().default(true),
-  trustedHosts: z.array(String).default([]),
+  publicUrl: z.transform(z.string(), value => parsePublicUrl(value).href),
 })
 
-/** Bind-dependent Web values shared by the trust fence and URL display. */
-export interface WebRuntimeValues {
-  /** LAN IPv4 literals sampled once when the server binds all interfaces. */
-  lanAddresses: string[]
-  /** LAN literals followed by explicit invocation authorities. */
-  trustedHosts: string[]
-}
-
-/** Environment variable naming the canonical local URL of this Web GUI. */
+/** Environment variable naming the advertised URL of this Web GUI. */
 const DSH_WEB_URL = 'DSH_WEB_URL' as const
-
-// Display-only mirror of the webserver schema's loopback host: the address the
-// local URL always prints. Not a source of truth — the schema is.
-const LOOPBACK_HOST = '127.0.0.1'
-/** The webserver schema's all-interfaces bind literal. */
-const ALL_INTERFACES_HOST = '0.0.0.0'
 
 const BROWSER_OPENER_MODULE = import.meta.resolve('open')
 
@@ -113,22 +107,51 @@ try {
 `
 
 /**
- * Resolve one LAN-trust snapshot from the active server bind.
- *
- * Derived entries are port-less IP literals: DNS rebinding needs an
- * attacker-controlled name, while an IP-literal Host is safe on any port and
- * an OS-assigned port is unknowable before bind.
- * @param bindHost - the active webserver bind host.
- * @param extra - explicit `--trusted-host` values, in argument order.
- * @returns the LAN display addresses and invocation-derived fence authorities.
+ * Local root URL of the active Web server, using the browser-compatible form
+ * of its bind address and brackets for IPv6 literals. Non-loopback binds such
+ * as a container's Pod address advertise that address.
+ * @param ctx - context carrying the webServer service.
+ * @param pluginName - diagnostic prefix of a failed resolution.
+ * @throws when the runtime resolves without a bound webServer, or when the bind
+ *   address has no URL form (see {@link advertisedBindHost}).
  */
-export function resolveLanTrust(bindHost: string, extra: readonly string[]): WebRuntimeValues {
-  const lanAddresses = bindHost === ALL_INTERFACES_HOST
-    ? Object.values(networkInterfaces()).flat()
-      .filter((iface): iface is NonNullable<typeof iface> => iface !== undefined && iface.family === 'IPv4' && !iface.internal)
-      .map(iface => iface.address)
-    : []
-  return { lanAddresses, trustedHosts: [...lanAddresses, ...extra] }
+function localWebUrl(ctx: Context, pluginName: string): string {
+  const webServer = ctx.get('webServer')
+  const port = webServer?.port
+  if (webServer === undefined || port === undefined) {
+    throw new Error(`${pluginName}: webServer service missing while resolving Web runtime`)
+  }
+  const host = advertisedBindHost(webServer.host, pluginName)
+  return `${webServer.protocol}//${isIP(host) === 6 ? `[${host}]` : host}:${String(port)}`
+}
+
+/**
+ * Bind address in a URL. Loopback addresses use their canonical address text,
+ * so browsers treat them as local, trustworthy origins: a genuinely mapped
+ * literal such as `::ffff:127.0.0.1` reads as `127.0.0.1`, and a dotted-quad
+ * tail reads as the address it names, so `::0.0.0.1` reads as `::1` rather
+ * than as `0.0.0.1`. Interface zone IDs cannot appear in a URL; only a
+ * redundant loopback zone can be dropped.
+ * @param host - webserver bind address.
+ * @param pluginName - diagnostic prefix of the rejection.
+ * @returns the zone-free URL host.
+ * @throws when a non-loopback zone requires an explicit public URL.
+ */
+function advertisedBindHost(host: string, pluginName: string): string {
+  const zoneAt = host.indexOf('%')
+  const bare = zoneAt === -1 ? host : host.slice(0, zoneAt)
+  if (isLoopbackHost(bare)) return normalizeBindAddress(bare)
+  if (zoneAt === -1) return host
+  throw new Error(
+    `${pluginName}: bind address ${JSON.stringify(host)} carries an interface zone id, which no URL can express;`
+    + ' pass --public-url with the root browsers actually reach it through',
+  )
+}
+
+/** Resolve the advertised root: this plugin's canonical `publicUrl`, or the bind-address URL (loopback when bound to loopback). */
+function appRootUrl(ctx: Context, publicUrl: string | undefined, pluginName: string): string {
+  if (publicUrl !== undefined) return publicUrl
+  return localWebUrl(ctx, pluginName)
 }
 
 /** Model-visible orientation and acceptance boundary for sessions created through `dsh web`. */
@@ -143,118 +166,6 @@ function webSurfacePrompt(webUrl: string): string {
     + 'Starting another server does not update this GUI. '
     + 'The apps/web Vite entry builds the shell but is not a standalone application because only dsh web injects window.__DSH_BOOT__. '
     + 'Do not start a replacement server unless the user asks; if one is needed, use a managed background job and verify its exact URL.'
-}
-
-/** Resolve the canonical loopback URL from the active Web server. */
-function localWebUrl(ctx: Context, pluginName: string): string {
-  const port = ctx.get('webServer')?.port
-  if (port === undefined) throw new Error(`${pluginName}: webServer service missing while resolving Web runtime`)
-  return `http://${LOOPBACK_HOST}:${String(port)}`
-}
-
-/**
- * The branded half of a Web runtime: what a browser-surface bundle serves and
- * says. The stock bundle passes the DeepSeek Harness identity; a rebranding
- * bundle (dsh-nousai-web-app) passes its own so both share
- * {@link applyWebRuntime}'s seat and readiness mechanics without drifting.
- */
-export interface WebRuntimeIdentity {
-  /** Plugin name used as the diagnostic prefix of runtime failures. */
-  pluginName: string
-  /** Resolve the built shell dist's index.html; read once per mount. */
-  distIndex: () => string
-  /** Register the branded harness-source prompt section against the prompt context. */
-  harnessSource: (promptCtx: Context) => void
-  /** Model-visible orientation for the surface at the resolved loopback URL. */
-  surfacePrompt: (webUrl: string) => string
-  /** Model-visible description of the `DSH_WEB_URL` bash variable. */
-  webUrlDescription: string
-}
-
-/**
- * Mount one branded Web runtime: dist serving over the frontend-static
- * fallback seat, the surface prompt sections, the bash runtime variable, and
- * the Loader-settled URL line.
- * @param ctx - plugin context carrying the webServer service.
- * @param config - validated {@link Config}.
- * @param identity - the mounting bundle's {@link WebRuntimeIdentity}.
- */
-export function applyWebRuntime(ctx: Context, config: Config, identity: WebRuntimeIdentity): void {
-  const runtime = resolveLanTrust(ctx.webServer.host, config.trustedHosts)
-  // The loopback URL belongs to this host. Under SSH, the operator reaches it
-  // through a local forwarding address that this process cannot derive.
-  const handoffBrowser = config.openBrowser && !launchedThroughSsh(launchEnvironmentOf(ctx))
-  // Release dependent rows only after bind-dependent trust has been sampled once.
-  ctx.provide(WEB_RUNTIME_SERVICE, runtime)
-  ctx.plugin(FrontendStatic, { distIndex: identity.distIndex() })
-  if (config.surfaceContext) {
-    ctx.inject(['systemPrompt'], (promptCtx) => {
-      identity.harnessSource(promptCtx)
-      promptCtx.systemPrompt.section({
-        name: 'app:web-surface',
-        order: promptCtx.systemPrompt.getSectionOrder('WEB_SURFACE'),
-        text: () => identity.surfacePrompt(localWebUrl(promptCtx, identity.pluginName)),
-      })
-    })
-    ctx.inject(['shellEnv'], (runtimeCtx) => {
-      runtimeCtx.shellEnv.register({
-        name: 'web-runtime',
-        variables: {
-          [DSH_WEB_URL]: { description: identity.webUrlDescription },
-        },
-        resolve: () => ({ [DSH_WEB_URL]: localWebUrl(runtimeCtx, identity.pluginName) }),
-      })
-    })
-  }
-  if (config.printUrl || handoffBrowser) {
-    ctx.inject(['connection'], (connectionCtx) => {
-      // The URL line and browser handoff are readiness signals: supervisors RPC
-      // as soon as they observe the line, while a browser requests the page as
-      // soon as it opens. Neither may run while sibling rows such as the /api
-      // route owner are still mounting. Await Loader settlement first; a
-      // hand-built tree without a Loader is already the complete tree.
-      const announceReady = (): void => {
-        if (ANNOUNCED_ROOTS.has(connectionCtx.root)) return
-        const webUrl = localWebUrl(connectionCtx, identity.pluginName)
-        const authenticatedUrl = connectionCtx.connection.authenticatedUrl(webUrl)
-        // Reuse the exact LAN snapshot provided to the /api trust fence.
-        const lanCandidate = runtime.lanAddresses[0]
-        const port = connectionCtx.webServer.port
-        const lanUrl = lanCandidate === undefined
-          ? undefined
-          : connectionCtx.connection.authenticatedUrl(`http://${lanCandidate}:${String(port)}`)
-        ANNOUNCED_ROOTS.add(connectionCtx.root)
-        if (config.printUrl) {
-          console.log(`dsh web: ${authenticatedUrl}${lanUrl === undefined ? '' : ` (LAN: ${lanUrl})`}`)
-        }
-        if (handoffBrowser) {
-          console.log('dsh web: opening the default browser; pass --no-open to disable')
-          void internals.openBrowser(authenticatedUrl).catch((error: unknown) => {
-            const reason = error instanceof Error ? error.message : String(error)
-            console.error(`${identity.pluginName}: could not open the default browser because ${reason}; use the dsh web URL printed at startup`)
-          })
-        }
-      }
-      // This row's own activation can precede a sibling failure. The app owns
-      // readiness by waiting for its Loader tree, or announces at once in a
-      // hand-built tree without Loader.
-      const settled = connectionCtx.get('loader')?.await()
-      if (settled === undefined) announceReady()
-      else {
-        void settled.then(async () => {
-          await auditStartupEntries(connectionCtx.root, 'dsh web', () => {})
-          // The tree can be disposed while the boot was in flight (early
-          // SIGTERM); a URL line or browser tab for a dead server would only
-          // mislead, and reading torn-down services would turn a clean shutdown
-          // into a crash.
-          if (connectionCtx.get('webServer') !== undefined
-            && connectionCtx.get('connection') !== undefined) announceReady()
-        }).catch(() => {
-          // Boot owns the failure diagnostic; readiness remains unpublished.
-        })
-      }
-    })
-  }
 }
 
 /**
@@ -322,6 +233,110 @@ export const internals: {
 } = { resolveDistIndex, openBrowser }
 
 /**
+ * The branded half of a Web runtime: what a browser-surface bundle serves and
+ * says. The stock bundle passes the DeepSeek Harness identity; a rebranding
+ * bundle (dsh-nousai-web-app) passes its own so both share
+ * {@link applyWebRuntime}'s seat and readiness mechanics without drifting.
+ */
+export interface WebRuntimeIdentity {
+  /** Plugin name used as the diagnostic prefix of runtime failures. */
+  pluginName: string
+  /** Resolve the built shell dist's index.html; read once per mount. */
+  distIndex: () => string
+  /** Register the branded harness-source prompt section against the prompt context. */
+  harnessSource: (promptCtx: Context) => void
+  /** Model-visible orientation for the surface at the advertised root. */
+  surfacePrompt: (webUrl: string) => string
+  /** Model-visible description of the `DSH_WEB_URL` bash variable. */
+  webUrlDescription: string
+}
+
+/**
+ * Mount one branded Web runtime: dist serving over the frontend-static
+ * fallback seat, the surface prompt sections, the bash runtime variable, and
+ * the Loader-settled URL line and default-browser handoff.
+ * @param ctx - plugin context carrying the webServer service.
+ * @param config - validated {@link Config}.
+ * @param identity - the mounting bundle's {@link WebRuntimeIdentity}.
+ */
+export function applyWebRuntime(ctx: Context, config: Config, identity: WebRuntimeIdentity): void {
+  // The schema validates a present string; an explicit YAML `null` bypasses
+  // the string transform and reaches here, meaning unset.
+  const publicUrl = config.publicUrl ?? undefined
+  const boundHost = ctx.webServer.host
+  if (publicUrl === undefined) advertisedBindHost(boundHost, identity.pluginName)
+  if (ctx.webServer.protocol === 'http:' && !isLoopbackHost(boundHost)) {
+    console.warn(`dsh web: listening on ${boundHost} over plain HTTP; restrict this port to a trusted proxy or network`)
+  }
+  // The bind URL belongs to this host. Under SSH, the operator reaches it
+  // through a local forwarding address that this process cannot derive.
+  const handoffBrowser = config.openBrowser && !launchedThroughSsh(launchEnvironmentOf(ctx))
+  ctx.plugin(FrontendStatic, { distIndex: identity.distIndex() })
+  if (config.surfaceContext) {
+    ctx.inject(['systemPrompt'], (promptCtx) => {
+      identity.harnessSource(promptCtx)
+      promptCtx.systemPrompt.section({
+        name: 'app:web-surface',
+        order: promptCtx.systemPrompt.getSectionOrder('WEB_SURFACE'),
+        text: () => identity.surfacePrompt(appRootUrl(promptCtx, publicUrl, identity.pluginName)),
+      })
+    })
+    ctx.inject(['shellEnv'], (runtimeCtx) => {
+      runtimeCtx.shellEnv.register({
+        name: 'web-runtime',
+        variables: {
+          [DSH_WEB_URL]: { description: identity.webUrlDescription },
+        },
+        resolve: () => ({ [DSH_WEB_URL]: appRootUrl(runtimeCtx, publicUrl, identity.pluginName) }),
+      })
+    })
+  }
+  if (config.printUrl || handoffBrowser) {
+    ctx.inject(['connection'], (connectionCtx) => {
+      // The URL line and browser handoff are readiness signals: supervisors RPC
+      // as soon as they observe the line, while a browser requests the page as
+      // soon as it opens. Neither may run while sibling rows such as the /api
+      // route owner are still mounting. Await Loader settlement first; a
+      // hand-built tree without a Loader is already the complete tree.
+      const announceReady = (): void => {
+        if (ANNOUNCED_ROOTS.has(connectionCtx.root)) return
+        const webUrl = appRootUrl(connectionCtx, publicUrl, identity.pluginName)
+        const authenticatedUrl = connectionCtx.connection.authenticatedUrl(webUrl)
+        ANNOUNCED_ROOTS.add(connectionCtx.root)
+        if (config.printUrl) {
+          console.log(`dsh web: ${authenticatedUrl}`)
+        }
+        if (handoffBrowser) {
+          console.log('dsh web: opening the default browser; pass --no-open to disable')
+          void internals.openBrowser(authenticatedUrl).catch((error: unknown) => {
+            const reason = error instanceof Error ? error.message : String(error)
+            console.error(`${identity.pluginName}: could not open the default browser because ${reason}; use the dsh web URL printed at startup`)
+          })
+        }
+      }
+      // This row's own activation can precede a sibling failure. The app owns
+      // readiness by waiting for its Loader tree, or announces at once in a
+      // hand-built tree without Loader.
+      const settled = connectionCtx.get('loader')?.await()
+      if (settled === undefined) announceReady()
+      else {
+        void settled.then(async () => {
+          await auditStartupEntries(connectionCtx.root, 'dsh web', () => {})
+          // The tree can be disposed while the boot was in flight (early
+          // SIGTERM); a URL line or browser tab for a dead server would only
+          // mislead, and reading torn-down services would turn a clean shutdown
+          // into a crash.
+          if (connectionCtx.get('webServer') !== undefined
+            && connectionCtx.get('connection') !== undefined) announceReady()
+        }).catch(() => {
+          // Boot owns the failure diagnostic; readiness remains unpublished.
+        })
+      }
+    })
+  }
+}
+
+/**
  * Mount the Web runtime: dist serving, surface prompt, the bash runtime
  * variable, the URL line, and the default-browser handoff.
  * @param ctx - plugin context carrying the webServer service.
@@ -333,6 +348,6 @@ export function apply(ctx: Context, config: Config): void {
     distIndex: () => internals.resolveDistIndex(),
     harnessSource: promptCtx => void addHarnessSourceSection(promptCtx, SOURCE_ROOT),
     surfacePrompt: webSurfacePrompt,
-    webUrlDescription: 'Canonical local URL of the DeepSeek Harness Web GUI serving this session.',
+    webUrlDescription: 'Advertised URL of the DeepSeek Harness Web GUI serving this session.',
   })
 }
