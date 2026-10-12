@@ -24,20 +24,35 @@ if [ ! -d "$PROFILE" ] && [ -d /opt/dsh-seed ]; then
   cp -a /opt/dsh-seed/. "$DSH_HOME"/
 fi
 
-# The CLI rejects `--host 0.0.0.0` on purpose (it would expose remote code
-# execution to the network), but a container must bind all interfaces for port
-# publishing to reach it. The profile patch is the supported route, and the
-# safety it guards is restored by publishing to loopback only on the host.
-# A patch replaces the row's whole config, so both keys are restated.
-if [ ! -s "$PROFILE/cordis.patch.yml" ]; then
-  mkdir -p "$PROFILE"
-  cat > "$PROFILE/cordis.patch.yml" <<'YAML'
+# The listener must bind one concrete address of a local interface: the
+# webserver config rejects every wildcard (`0.0.0.0`, `::`) at load, so port
+# publishing reaches the container through its own interface address, resolved
+# at each boot because the engine may assign a different one per run. The host
+# side keeps the exposure in check by publishing to loopback only.
+BIND_HOST="$(node -e '
+const { networkInterfaces } = require("node:os")
+const address = Object.values(networkInterfaces()).flat()
+  .find(iface => iface !== undefined && iface.family === "IPv4" && !iface.internal)?.address
+if (address === undefined) { console.error("no non-loopback IPv4 interface"); process.exit(1) }
+process.stdout.write(address)
+')"
+# The advertised root is what the browser on the host dials: the documented
+# publish mapping by default, or the deployment's own URL through DSH_PUBLIC_URL.
+: "${DSH_PUBLIC_URL:=http://127.0.0.1:3080/}"
+
+# Images before 0.2.1-alpha.2 seeded a `webserver` patch binding `0.0.0.0`,
+# which the current schema rejects at load. The seeded text is replaced by the
+# bind flags below; a patch the user changed is left alone and fails loud.
+WILDCARD_PATCH="$(cat <<'YAML'
 # Container bind. Publish with `-p 127.0.0.1:3080:3080` — never a routable interface.
 - id: webserver
   config:
     host: '0.0.0.0'
     port: 3080
 YAML
+)"
+if [ -f "$PROFILE/cordis.patch.yml" ] && [ "$(cat "$PROFILE/cordis.patch.yml")" = "$WILDCARD_PATCH" ]; then
+  rm "$PROFILE/cordis.patch.yml"
 fi
 
 # pi-ai's openai-completions client requires a non-empty apiKey OR a non-empty
@@ -70,5 +85,5 @@ fi
 $DSH plugin --profile web install >/dev/null \
   || echo "WARN: profile re-link failed; continuing with the existing profile" >&2
 
-echo "NousAI harness: DSH_HOME=$DSH_HOME  model=$LM_STUDIO_MODEL  via $LM_STUDIO_BASE_URL"
-exec $DSH web "$@"
+echo "NousAI harness: DSH_HOME=$DSH_HOME  bind=$BIND_HOST:3080  public=$DSH_PUBLIC_URL  model=$LM_STUDIO_MODEL  via $LM_STUDIO_BASE_URL"
+exec $DSH web --host "$BIND_HOST" --port 3080 --public-url "$DSH_PUBLIC_URL" --no-open "$@"

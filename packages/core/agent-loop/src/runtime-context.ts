@@ -35,7 +35,13 @@ const SOURCE = 'Runtime context'
 const RELEASED_SOURCE = 'runtime-context'
 const CLEARED = 'Current runtime context: none. Earlier runtime-context snapshots no longer apply.'
 
-function isOwned(message: UserMessage): boolean {
+/**
+ * Whether a user message is a runtime-context snapshot: the kind this fork
+ * writes or the kind an upstream build recorded.
+ * @param message - user message to classify.
+ * @returns true for a snapshot of either kind.
+ */
+export function isRuntimeContextSnapshot(message: UserMessage): boolean {
   return message.source.kind === SOURCE || message.source.kind === RELEASED_SOURCE
 }
 
@@ -139,7 +145,7 @@ export class RuntimeContextProjection {
   constructor(ctx: Context, session: Session) {
     const surface = new Set(session.surface.nodes)
     for (const event of eventsNewestFirst(session)) {
-      if (event.type !== 'user/message' || !isOwned(event.data)) continue
+      if (event.type !== 'user/message' || !isRuntimeContextSnapshot(event.data)) continue
       this.retained ??= null
       if (surface.has(event.seq)) {
         this.retained = { seq: event.seq, text: textOf(event.data) }
@@ -149,7 +155,7 @@ export class RuntimeContextProjection {
 
     ctx.on('session/event', (subject, event) => {
       if (subject !== session) return
-      if (event.type === 'user/message' && isOwned(event.data)) {
+      if (event.type === 'user/message' && isRuntimeContextSnapshot(event.data)) {
         this.retained = { seq: event.seq, text: textOf(event.data) }
       } else if (this.retained
         && isReplacementSurfaceEvent(event)

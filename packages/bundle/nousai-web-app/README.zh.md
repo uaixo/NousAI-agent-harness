@@ -36,7 +36,7 @@ reconcile 步骤把本包的 [`cordis.patch.yml`](cordis.patch.yml) 作为一层
 
 ### 你会得到什么
 
-GUI 提供 NousAI 外壳：页面外观、启动页字标、以及侧边栏与主视觉品牌标识（插入的 [`ui-nousai-brand`](../../client/ui-nousai-brand/README.zh.md) 行填充浏览器品牌插槽），DeepSeek 品牌的内测须知被遮蔽出引导链。模型看到的是 NousAI 角色设定与 NousAI 措辞的表层上下文，而非原生身份。运行时胶水重述原生 web 胶水的四个配置字段（`openBrowser`、`printUrl`、`surfaceContext`、`trustedHosts`）；生成的[配置目录](../../../docs/config-catalog.zh.md#deepseek-aidsh-nousai-web-app)是每个可接受字段的完备来源。
+GUI 提供 NousAI 外壳：页面外观、启动页字标、以及侧边栏与主视觉品牌标识（插入的 [`ui-nousai-brand`](../../client/ui-nousai-brand/README.zh.md) 行填充浏览器品牌插槽），DeepSeek 品牌的内测须知被遮蔽出引导链。模型看到的是 NousAI 角色设定与 NousAI 措辞的表层上下文，而非原生身份。运行时胶水重述原生 web 胶水的四个配置字段（`openBrowser`、`printUrl`、`surfaceContext`、`publicUrl`）；生成的[配置目录](../../../docs/config-catalog.zh.md#deepseek-aidsh-nousai-web-app)是每个可接受字段的完备来源。
 
 -----
 

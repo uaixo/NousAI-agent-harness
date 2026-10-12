@@ -2,9 +2,9 @@
  * NousAI web runtime glue behavior: dist resolution through this bundle's own
  * hook (the NousAI frontend package), the frontend-static child claiming the
  * fallback seat, the NousAI-worded prompt sections and bash runtime variable,
- * and URL-line printing with the runtime's bind-dependent LAN snapshot. The
- * branch structure mirrors the stock web-app spec because the runtimes share
- * their seat and readiness mechanics.
+ * the advertised public root, and URL-line printing. The branch structure
+ * mirrors the stock web-app spec because the runtimes share their seat and
+ * readiness mechanics.
  */
 
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
@@ -15,14 +15,6 @@ import { Context } from '@deepseek-ai/cordis'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import type { WebServer } from '@deepseek-ai/dsh-host-webserver'
 import { apply, Config, internals, inject, name } from '../src/index.ts'
-
-vi.mock('node:os', async importOriginal => ({
-  ...await importOriginal<typeof import('node:os')>(),
-  networkInterfaces: () => ({
-    lo0: [{ family: 'IPv4', internal: true, address: '127.0.0.1' }],
-    en0: [{ family: 'IPv4', internal: false, address: '192.168.1.5' }],
-  }),
-}))
 
 let dist: string | undefined
 
@@ -46,18 +38,19 @@ function stageDist(): string {
 }
 
 /** A fake webServer capturing the fallback seat and index taps. */
-function fakeHttpServer(host: '127.0.0.1' | '0.0.0.0' = '127.0.0.1'): { server: WebServer; seat: () => unknown } {
+function fakeHttpServer(): { server: WebServer; seat: () => unknown } {
   let fallback: unknown
-  const server = {
-    host,
+  const server: Pick<WebServer, 'host' | 'port' | 'protocol' | 'registerFallback' | 'renderIndex'> = {
+    host: '127.0.0.1',
     port: 4567,
+    protocol: 'http:',
     registerFallback: (handler: unknown) => {
       fallback = handler
       return () => { fallback = undefined }
     },
     renderIndex: (html: string) => html,
-  } as WebServer
-  return { server, seat: () => fallback }
+  }
+  return { server: server as WebServer, seat: () => fallback }
 }
 
 /** A fake Loader whose settlement the test controls (the URL line waits on it). */
@@ -68,9 +61,10 @@ function provideLoader(ctx: Context, settle: () => Promise<void> = async () => {
 /** A fake Connection issuing deterministic process-token URLs (the announce waits on it). */
 function provideConnection(ctx: Context): void {
   ctx.provide('connection', {
+    // Adds the process token to the given canonical root, preserving any
+    // public mount prefix the caller passed.
     authenticatedUrl(baseUrl: string) {
       const url = new URL(baseUrl)
-      url.pathname = '/'
       url.searchParams.set('token', 'test-token')
       return url.href
     },
@@ -87,10 +81,10 @@ interface BashContribution {
 }
 
 describe('nousai-web-app runtime glue', () => {
-  it('mounts dist serving, NousAI prompt sections, bash variables, and prints the URL with the LAN snapshot', async () => {
+  it('mounts dist serving, NousAI prompt sections, bash variables, and prints the loopback URL', async () => {
     stageDist()
     const ctx = new Context()
-    const { server, seat } = fakeHttpServer('0.0.0.0')
+    const { server, seat } = fakeHttpServer()
     ctx.provide('webServer', server)
     provideConnection(ctx)
     const contributions: BashContribution[] = []
@@ -102,17 +96,13 @@ describe('nousai-web-app runtime glue', () => {
     } as never)
     provideLoader(ctx)
     const log = vi.spyOn(console, 'log').mockImplementation(() => {})
-    apply(ctx, new Config({ openBrowser: false, printUrl: true, surfaceContext: true, trustedHosts: ['lab.internal'] }))
+    apply(ctx, new Config({ openBrowser: false, printUrl: true, surfaceContext: true }))
     await ctx.plugin(SystemPrompt, { personaPrefix: '' })
     // Settle the injected registrations.
     await new Promise(resolve => setTimeout(resolve, 0))
 
     expect(seat()).toBeDefined() // frontend-static claimed the fallback
-    expect(ctx.get('webRuntime')).toEqual({
-      lanAddresses: ['192.168.1.5'],
-      trustedHosts: ['192.168.1.5', 'lab.internal'],
-    })
-    expect(log).toHaveBeenCalledWith('dsh web: http://127.0.0.1:4567/?token=test-token (LAN: http://192.168.1.5:4567/?token=test-token)')
+    expect(log).toHaveBeenCalledWith('dsh web: http://127.0.0.1:4567/?token=test-token')
     const assembly = await ctx.systemPrompt.assemble()
     const source = assembly.sections.find(entry => entry.name === 'harness:source')?.text
     expect(source).toContain('NousAI Harness implementation checkout')
@@ -130,12 +120,40 @@ describe('nousai-web-app runtime glue', () => {
     await ctx.fiber.dispose()
   })
 
+  it('advertises the configured public root in the URL line, the NousAI surface prompt, and DSH_WEB_URL', async () => {
+    stageDist()
+    const ctx = new Context()
+    ctx.provide('webServer', fakeHttpServer().server)
+    provideConnection(ctx)
+    const contributions: BashContribution[] = []
+    ctx.provide('shellEnv', {
+      register: (contribution: BashContribution) => {
+        contributions.push(contribution)
+        return () => {}
+      },
+    } as never)
+    provideLoader(ctx)
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {})
+    apply(ctx, new Config({ openBrowser: false, printUrl: true, surfaceContext: true, publicUrl: 'https://proxy.example:8443/web' }))
+    await ctx.plugin(SystemPrompt, { personaPrefix: '' })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    expect(log).toHaveBeenCalledWith('dsh web: https://proxy.example:8443/web/?token=test-token')
+    const assembly = await ctx.systemPrompt.assemble()
+    const section = assembly.sections.find(entry => entry.name === 'app:web-surface')
+    expect(section?.text).toContain('NousAI Harness Web GUI at https://proxy.example:8443/web/')
+    expect(section?.text).not.toContain('127.0.0.1')
+    const webRuntime = contributions.find(contribution => contribution.name === 'web-runtime')
+    expect(webRuntime?.resolve()).toEqual({ DSH_WEB_URL: 'https://proxy.example:8443/web/' })
+    await ctx.fiber.dispose()
+  })
+
   it('stays quiet with printUrl off', async () => {
     stageDist()
     const ctx = new Context()
     ctx.provide('webServer', fakeHttpServer().server)
     const log = vi.spyOn(console, 'log').mockImplementation(() => {})
-    apply(ctx, new Config({ openBrowser: false, printUrl: false, surfaceContext: true, trustedHosts: [] }))
+    apply(ctx, new Config({ openBrowser: false, printUrl: false, surfaceContext: true }))
     await ctx.plugin(SystemPrompt, { personaPrefix: '' })
     await new Promise(resolve => setTimeout(resolve, 0))
     expect(log).not.toHaveBeenCalled()
@@ -156,7 +174,7 @@ describe('nousai-web-app runtime glue', () => {
         return () => {}
       },
     } as never)
-    apply(ctx, new Config({ openBrowser: false, printUrl: false, surfaceContext: false, trustedHosts: [] }))
+    apply(ctx, new Config({ openBrowser: false, printUrl: false, surfaceContext: false }))
     await ctx.plugin(SystemPrompt, { personaPrefix: '' })
     await new Promise(resolve => setTimeout(resolve, 0))
     const assembly = await ctx.systemPrompt.assemble()
@@ -166,13 +184,13 @@ describe('nousai-web-app runtime glue', () => {
     await ctx.fiber.dispose()
   })
 
-  it('prints the loopback-only URL line when no LAN snapshot exists', async () => {
+  it('prints the loopback URL line without a Loader', async () => {
     stageDist()
     const ctx = new Context()
     ctx.provide('webServer', fakeHttpServer().server)
     provideConnection(ctx)
     const log = vi.spyOn(console, 'log').mockImplementation(() => {})
-    apply(ctx, new Config({ openBrowser: false, printUrl: true, surfaceContext: true, trustedHosts: [] }))
+    apply(ctx, new Config({ openBrowser: false, printUrl: true, surfaceContext: true }))
     await new Promise(resolve => setTimeout(resolve, 0))
     expect(log).toHaveBeenCalledWith('dsh web: http://127.0.0.1:4567/?token=test-token')
     await ctx.fiber.dispose()
@@ -189,7 +207,7 @@ describe('nousai-web-app runtime glue', () => {
     const settlement = new Promise<void>((resolve) => { release = resolve })
     provideLoader(settled, () => settlement)
     const log = vi.spyOn(console, 'log').mockImplementation(() => {})
-    apply(settled, new Config({ openBrowser: false, printUrl: true, surfaceContext: true, trustedHosts: [] }))
+    apply(settled, new Config({ openBrowser: false, printUrl: true, surfaceContext: true }))
     await new Promise(resolve => setTimeout(resolve, 0))
     expect(log).not.toHaveBeenCalled()
     release!()
@@ -204,7 +222,7 @@ describe('nousai-web-app runtime glue', () => {
     failed.provide('webServer', fakeHttpServer().server)
     provideConnection(failed)
     provideLoader(failed, async () => { throw new Error('boot failed') })
-    apply(failed, new Config({ openBrowser: false, printUrl: true, surfaceContext: true, trustedHosts: [] }))
+    apply(failed, new Config({ openBrowser: false, printUrl: true, surfaceContext: true }))
     await new Promise(resolve => setTimeout(resolve, 0))
     expect(log).not.toHaveBeenCalled()
     await failed.fiber.dispose()
@@ -221,7 +239,7 @@ describe('nousai-web-app runtime glue', () => {
     let releaseTorn: () => void
     const tornSettlement = new Promise<void>((resolve) => { releaseTorn = resolve })
     provideLoader(torn, () => tornSettlement)
-    apply(torn, new Config({ openBrowser: false, printUrl: true, surfaceContext: true, trustedHosts: [] }))
+    apply(torn, new Config({ openBrowser: false, printUrl: true, surfaceContext: true }))
     await child.dispose() // the webServer service goes away
     releaseTorn!()
     await new Promise(resolve => setTimeout(resolve, 0))
@@ -229,33 +247,27 @@ describe('nousai-web-app runtime glue', () => {
     await torn.fiber.dispose()
   })
 
-  it('fails loud when the prompt section resolves against a portless webserver', async () => {
+  it('names the NousAI plugin in a failed advertised-root resolution', async () => {
     stageDist()
     const ctx = new Context()
     // A webserver whose bound port is gone (torn down mid-request): the
-    // section must throw, never render a URL with an undefined port.
+    // section must throw under this bundle's name, never render a URL with an
+    // undefined port.
     const { server } = fakeHttpServer()
     Object.defineProperty(server, 'port', { get: () => undefined })
     ctx.provide('webServer', server)
-    apply(ctx, new Config({ openBrowser: false, printUrl: false, surfaceContext: true, trustedHosts: [] }))
+    provideConnection(ctx)
+    apply(ctx, new Config({ openBrowser: false, printUrl: false, surfaceContext: true }))
     await ctx.plugin(SystemPrompt, { personaPrefix: '' })
     await new Promise(resolve => setTimeout(resolve, 0))
-    await expect(ctx.systemPrompt.assemble()).rejects.toThrow('webServer service missing')
+    await expect(ctx.systemPrompt.assemble()).rejects.toThrow('nousai-web-app: webServer service missing')
     await ctx.fiber.dispose()
   })
 
-  it('resolves the NousAI frontend dist anchor through the package manifest on any checkout', () => {
-    // The production resolver (not the test hook): the anchor resolves on any
-    // checkout, built or not — dist existence is the fallback owner's
-    // request-time concern, so a dist-less composition (the CI coverage lane
-    // runs before any build) boots and the page 404s until
-    // `pnpm run build:web:nousai` produces the dist, never a silent fallback
-    // to the stock frontend.
-    expect(originalResolve()).toMatch(/web-nousai[/\\]dist[/\\]index\.html$/)
-  })
-
-  it('exports the roster identity', () => {
+  it('anchors the dist index on the NousAI frontend package manifest without requiring a built dist', () => {
     expect(name).toBe('nousai-web-app')
     expect(inject).toEqual(['webServer'])
+    const index = originalResolve()
+    expect(index.replaceAll('\\', '/')).toMatch(/apps\/web-nousai\/dist\/index\.html$/)
   })
 })

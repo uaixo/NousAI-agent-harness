@@ -36,7 +36,7 @@ The reconcile step activates this package's [`cordis.patch.yml`](cordis.patch.ym
 
 ### What you get
 
-The GUI serves the NousAI shell: page chrome, boot-page wordmark, and the sidebar and hero brand marks (the inserted [`ui-nousai-brand`](../../client/ui-nousai-brand/README.md) row fills the browser brand slots), with the DeepSeek-branded internal-testing notice shadowed out of onboarding. The model sees the NousAI persona and NousAI-worded surface context instead of the stock identity. The runtime glue restates the stock web glue's four config fields (`openBrowser`, `printUrl`, `surfaceContext`, `trustedHosts`); the generated [configuration catalog](../../../docs/config-catalog.md#deepseek-aidsh-nousai-web-app) is the exhaustive source for every accepted field.
+The GUI serves the NousAI shell: page chrome, boot-page wordmark, and the sidebar and hero brand marks (the inserted [`ui-nousai-brand`](../../client/ui-nousai-brand/README.md) row fills the browser brand slots), with the DeepSeek-branded internal-testing notice shadowed out of onboarding. The model sees the NousAI persona and NousAI-worded surface context instead of the stock identity. The runtime glue restates the stock web glue's four config fields (`openBrowser`, `printUrl`, `surfaceContext`, `publicUrl`); the generated [configuration catalog](../../../docs/config-catalog.md#deepseek-aidsh-nousai-web-app) is the exhaustive source for every accepted field.
 
 -----
 

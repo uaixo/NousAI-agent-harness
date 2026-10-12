@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url'
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { HARNESS_SOURCE_SECTION } from '@deepseek-ai/dsh-app-boot'
-import { applyWebRuntime } from '@deepseek-ai/dsh-web-app'
+import { applyWebRuntime, parsePublicUrl } from '@deepseek-ai/dsh-web-app'
 import type {} from '@deepseek-ai/cordis-plugin-loader'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import type {} from '@deepseek-ai/dsh-shell-env'
@@ -42,15 +42,22 @@ export interface Config {
    * orientation text would be false.
    */
   surfaceContext: boolean
-  /** Explicit `--trusted-host` authorities from this invocation. */
-  trustedHosts: string[]
+  /**
+   * Canonical HTTP(S) root to advertise in the printed and opened URL,
+   * `DSH_WEB_URL`, and the web-surface orientation, e.g.
+   * `https://app.example/ui/`, normalized to end in `/`. Configures no routing
+   * or authentication; see the stock bundle's
+   * [public deployments](../../web-app/README.md#public-deployments).
+   * Absent or YAML `null` advertises the bind-address URL.
+   */
+  publicUrl?: string
 }
 
 export const Config: z<Config> = z.object({
   openBrowser: z.boolean().default(true),
   printUrl: z.boolean().default(true),
   surfaceContext: z.boolean().default(true),
-  trustedHosts: z.array(String).default([]),
+  publicUrl: z.transform(z.string(), value => parsePublicUrl(value).href),
 })
 /* jscpd:ignore-end */
 
@@ -113,6 +120,6 @@ export function apply(ctx: Context, config: Config): void {
     distIndex: () => internals.resolveDistIndex(),
     harnessSource: addNousAiSourceSection,
     surfacePrompt: webSurfacePrompt,
-    webUrlDescription: 'Canonical local URL of the NousAI Harness Web GUI serving this session.',
+    webUrlDescription: 'Advertised URL of the NousAI Harness Web GUI serving this session.',
   })
 }
