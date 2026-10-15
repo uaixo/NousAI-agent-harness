@@ -91,8 +91,9 @@ interface Probe {
   body: string
 }
 
-/** GET (by default) one path against the running server; returns status, headers of interest, and a body prefix. */
-async function request(port: number, path: string, init?: RequestInit): Promise<Probe> {
+/** GET (by default) one path against the running server; returns status, headers of interest, and the body. */
+async function request(port: number | undefined, path: string, init?: RequestInit): Promise<Probe> {
+  if (port === undefined) throw new Error('frontend-static test: the listener has not bound a port')
   const response = await fetch(`http://127.0.0.1:${String(port)}${path}`, init)
   return {
     status: response.status,

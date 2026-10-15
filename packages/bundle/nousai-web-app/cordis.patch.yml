@@ -34,10 +34,19 @@
     personaPrefix: >-
       You are a coding agent of the NousAI Harness, powered by the {{model}} model.
 
+# Restates the harness-dev-context row with the NousAI product wording: its
+# two system-prompt sections and two runtime-context lines name the NousAI
+# Harness, the harness checkout, and the apps/web-nousai shell.
+- id: harness-dev-context
+  config:
+    productName: NousAI Harness
+    harnessName: the harness
+    webShell: apps/web-nousai
+
 - insert:
     # NousAI web glue: serves the NousAI shell dist (NousAI marks as the
     # ui-primitives platform module, page title, favicon, PWA manifest, boot
-    # wordmark) and registers the NousAI-worded web-surface prompt section and
+    # wordmark), provides the webApp service, and registers the NousAI-worded
     # bash runtime variable.
     - id: nousai-web-runtime
       name: '@deepseek-ai/dsh-nousai-web-app'

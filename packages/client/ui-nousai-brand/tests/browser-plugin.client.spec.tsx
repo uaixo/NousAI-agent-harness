@@ -90,6 +90,7 @@ describe('ui-nousai-brand browser plugin', () => {
       stepId: 'welcome-notice', complete, openSection: vi.fn(),
       usePanelInfo: unusedHook, useSessions: unusedHook, useSessionStatus: unusedHook, useSessionRetainInfo: unusedHook,
       useWorkspaces: unusedHook, useResource: unusedHook,
+      useRemoteAccess: unusedHook, useSessionAccess: unusedHook, useWorkspaceAccess: unusedHook,
     }
     const view = render(<NousAiWelcomeSkip {...props} />)
     expect(view.container.innerHTML).toBe('')

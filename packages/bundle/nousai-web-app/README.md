@@ -46,7 +46,7 @@ The GUI serves the NousAI shell: page chrome, boot-page wordmark, and the sideba
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-The patch disables the stock `web-runtime` row (the frontend-static fallback seat is single-owner, so disable-then-insert rather than shadowing) and the `ui-brand-official` row (its official-build occupants would race this layer's NousAI occupants for the single-kind brand slots), inserts this package's `nousai-web-runtime` glue and the `ui-nousai-brand` browser row, and restates the `system-prompt` row with `includeHarnessIdentity: false` plus the NousAI persona. The glue plugin resolves the NousAI shell dist anchored on the `@deepseek-ai/dsh-web-frontend-nousai` package manifest — workspace knowledge of this bundle, never user config — and mounts the shared `applyWebRuntime` glue from [`dsh-web-app`](../web-app/README.md) with the NousAI identity: dist serving, the NousAI-worded `harness:source` and `app:web-surface` prompt sections, the `DSH_WEB_URL` bash variable, the URL line, and the default-browser handoff. The seat and readiness mechanics live in the shared glue so the two runtimes cannot drift.
+The patch disables the stock `web-runtime` row (the frontend-static fallback seat is single-owner, so disable-then-insert rather than shadowing) and the `ui-brand-official` row (its official-build occupants would race this layer's NousAI occupants for the single-kind brand slots), inserts this package's `nousai-web-runtime` glue and the `ui-nousai-brand` browser row, restates the `system-prompt` row with `includeHarnessIdentity: false` plus the NousAI persona, and restates the [`harness-dev-context`](../../context/harness-dev-context/README.md) row with the NousAI product wording (`productName: NousAI Harness`, `harnessName: the harness`, `webShell: apps/web-nousai`). The glue plugin resolves the NousAI shell dist anchored on the `@deepseek-ai/dsh-web-frontend-nousai` package manifest — workspace knowledge of this bundle, never user config — and mounts the shared `applyWebRuntime` glue from [`dsh-web-app`](../web-app/README.md) with the NousAI identity: dist serving, the `webApp` service that `harness-dev-context` reads, the NousAI-worded `DSH_WEB_URL` bash variable, the URL line, and the default-browser handoff. The seat and readiness mechanics live in the shared glue so the two runtimes cannot drift.
 
 ### Source map
 
@@ -54,8 +54,8 @@ The patch disables the stock `web-runtime` row (the frontend-static fallback sea
 |---|---|
 | [`cordis.patch.yml`](cordis.patch.yml) | The patch: disabled stock runtime and official-brand rows, restated NousAI persona, inserted runtime and brand rows |
 | [`src/index.ts`](src/index.ts) | The `nousai-web-runtime` glue plugin: dist resolution and the NousAI `applyWebRuntime` identity |
-| — | No runtime invariant companion is published: every contribution (the frontend-static child plugin, the prompt sections, the bash variable) is registry-disposed with the fiber, and this bundle holds no mutable state of its own to audit |
-| [`tests/nousai-web-app.spec.ts`](tests/nousai-web-app.spec.ts) | Dist resolution, prompt sections, URL-line readiness, roster identity |
+| — | No runtime invariant companion is published: every contribution (the frontend-static child plugin, the `webApp` service, the bash variable) is registry-disposed with the fiber, and this bundle holds no mutable state of its own to audit |
+| [`tests/nousai-web-app.spec.ts`](tests/nousai-web-app.spec.ts) | Dist resolution, `webApp` service, bash variable, URL-line readiness, roster identity |
 
 </details>
 
@@ -81,15 +81,15 @@ Read these pages for the stock runtime this layer rides on and the branding piec
 
 #### What the model sees
 
-The fixed "powered by DeepSeek Harness" identity opener is suppressed (`includeHarnessIdentity: false`); the deployment persona prefix names the NousAI Harness instead, and the persona suffix keeps the stock cwd line after the reusable first-party instructions. When `surfaceContext` is true, the `harness:source` section and the `app:web-surface` section carry the same orientation as the stock bundle with NousAI wording, and `DSH_WEB_URL`'s description names the NousAI Harness Web GUI. Structure, section names, and orders are the stock bundle's.
+The fixed "powered by DeepSeek Harness" identity opener is suppressed (`includeHarnessIdentity: false`); the deployment persona prefix names the NousAI Harness instead, and the persona suffix keeps the stock cwd line after the reusable first-party instructions. The restated `harness-dev-context` row gives its `harness:source` and `app:web-surface` sections and both runtime-context lines the stock orientation with NousAI wording, and when `surfaceContext` is true `DSH_WEB_URL`'s description names the NousAI Harness Web GUI. Structure, section names, and orders are the stock bundle's.
 
 #### Token effect
 
-Identical shape to the stock web surface: one persona prefix line, one source line, one prompt paragraph, one persona suffix line, two managed-environment variable lines; constant per process.
+Identical shape to the stock web surface: one persona prefix line, two value-free prompt paragraphs, one persona suffix line, two runtime-context lines, two managed-environment variable lines; the prompt is constant across processes.
 
 #### KV Cache effect
 
-The persona prefix sits at the system prompt's head; the source, Web, and persona suffix sections follow the first-party reusable instructions, so different checkout paths, ports, or working directories leave that preceding prefix unchanged when tools and configuration match. All of them are stable for the life of the process. Installing or removing this bundle changes the prompt prefix between processes, as any composition change does; provider cache reuse is not guaranteed.
+The persona prefix sits at the system prompt's head; the source, Web, and persona suffix sections follow the first-party reusable instructions and carry no checkout path or URL, so different checkouts or ports leave the system prompt unchanged when tools and configuration match; a changed value appends one runtime-context snapshot. Installing or removing this bundle changes the prompt prefix between processes, as any composition change does; provider cache reuse is not guaranteed.
 
 ## Known Limitations and Deferred Work
 

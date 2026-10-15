@@ -46,7 +46,7 @@ GUI 提供 NousAI 外壳：页面外观、启动页字标、以及侧边栏与�
 <details>
 <summary>实现内部——点击展开</summary>
 
-补丁停用原生 `web-runtime` 行（frontend-static 回退席位是单一所有者，因此采用停用后插入而非遮蔽）与 `ui-brand-official` 行（其官方构建下的占位者会与本层的 NousAI 占位者争抢单一型品牌插槽），插入本包的 `nousai-web-runtime` 胶水与 `ui-nousai-brand` 浏览器行，并以 `includeHarnessIdentity: false` 加 NousAI 角色设定重述 `system-prompt` 行。胶水插件以 `@deepseek-ai/dsh-web-frontend-nousai` 包 manifest 为锚解析 NousAI 外壳 dist——这是本 bundle 的工作区知识，绝非用户配置——并以 NousAI 身份挂载 [`dsh-web-app`](../web-app/README.zh.md) 导出的共享 `applyWebRuntime` 胶水：dist 服务、NousAI 措辞的 `harness:source` 与 `app:web-surface` 提示词段、`DSH_WEB_URL` bash 变量、URL 行、以及默认浏览器交接。席位与就绪机制位于共享胶水中，因此两个运行时不会漂移。
+补丁停用原生 `web-runtime` 行（frontend-static 回退席位是单一所有者，因此采用停用后插入而非遮蔽）与 `ui-brand-official` 行（其官方构建下的占位者会与本层的 NousAI 占位者争抢单一型品牌插槽），插入本包的 `nousai-web-runtime` 胶水与 `ui-nousai-brand` 浏览器行，以 `includeHarnessIdentity: false` 加 NousAI 角色设定重述 `system-prompt` 行，并以 NousAI 产品措辞（`productName: NousAI Harness`、`harnessName: the harness`、`webShell: apps/web-nousai`）重述 [`harness-dev-context`](../../context/harness-dev-context/README.zh.md) 行。胶水插件以 `@deepseek-ai/dsh-web-frontend-nousai` 包 manifest 为锚解析 NousAI 外壳 dist——这是本 bundle 的工作区知识，绝非用户配置——并以 NousAI 身份挂载 [`dsh-web-app`](../web-app/README.zh.md) 导出的共享 `applyWebRuntime` 胶水：dist 服务、`harness-dev-context` 读取的 `webApp` 服务、NousAI 措辞的 `DSH_WEB_URL` bash 变量、URL 行、以及默认浏览器交接。席位与就绪机制位于共享胶水中，因此两个运行时不会漂移。
 
 ### 源码地图
 
@@ -54,8 +54,8 @@ GUI 提供 NousAI 外壳：页面外观、启动页字标、以及侧边栏与�
 |---|---|
 | [`cordis.patch.yml`](cordis.patch.yml) | 补丁：停用的原生运行时行与官方品牌行、重述的 NousAI 角色设定、插入的运行时与品牌行 |
 | [`src/index.ts`](src/index.ts) | `nousai-web-runtime` 胶水插件：dist 解析与 NousAI `applyWebRuntime` 身份 |
-| — | 不发布运行时不变量伴随入口：每项贡献（frontend-static 子插件、提示词段、bash 变量）都随 fiber 由注册表释放，本 bundle 自身不持有可审计的可变状态 |
-| [`tests/nousai-web-app.spec.ts`](tests/nousai-web-app.spec.ts) | dist 解析、提示词段、URL 行就绪、花名册身份 |
+| — | 不发布运行时不变量伴随入口：每项贡献（frontend-static 子插件、`webApp` 服务、bash 变量）都随 fiber 由注册表释放，本 bundle 自身不持有可审计的可变状态 |
+| [`tests/nousai-web-app.spec.ts`](tests/nousai-web-app.spec.ts) | dist 解析、`webApp` 服务、bash 变量、URL 行就绪、花名册身份 |
 
 </details>
 
@@ -81,15 +81,15 @@ GUI 提供 NousAI 外壳：页面外观、启动页字标、以及侧边栏与�
 
 #### 模型看到什么
 
-固定的 "powered by DeepSeek Harness" 身份开场被抑制（`includeHarnessIdentity: false`）；部署角色设定前缀改为点名 NousAI Harness，角色设定后缀则保留原生的 cwd 行，位于可复用的第一方指令之后。`surfaceContext` 为 true 时，`harness:source` 段与 `app:web-surface` 段以 NousAI 措辞承载与原 bundle 相同的定向信息，`DSH_WEB_URL` 的描述点名 NousAI Harness Web GUI。结构、段名与顺序与原 bundle 一致。
+固定的 "powered by DeepSeek Harness" 身份开场被抑制（`includeHarnessIdentity: false`）；部署角色设定前缀改为点名 NousAI Harness，角色设定后缀则保留原生的 cwd 行，位于可复用的第一方指令之后。重述后的 `harness-dev-context` 行让其 `harness:source` 与 `app:web-surface` 段及两行运行时上下文以 NousAI 措辞承载原生定向信息；`surfaceContext` 为 true 时，`DSH_WEB_URL` 的描述点名 NousAI Harness Web GUI。结构、段名与顺序与原 bundle 一致。
 
 #### Token 影响
 
-与原 Web 界面形状相同：一行角色设定前缀、一行源码位置、一段提示词、一行角色设定后缀、两行受管环境变量说明；每进程恒定。
+与原 Web 界面形状相同：一行角色设定前缀、两段不含值的提示词、一行角色设定后缀、两行运行时上下文、两行受管环境变量说明；提示词在进程之间恒定。
 
 #### KV 缓存影响
 
-角色设定前缀位于系统提示词头部；源码、Web 与角色设定后缀段落位于第一方可复用指令之后，因此工具与配置一致时，不同的 checkout 路径、端口或工作目录不会改变前置前缀。它们在进程生命周期内均保持稳定。安装或移除本 bundle 会改变进程之间的提示词前缀，与任何组合变更相同；不保证提供方复用缓存。
+角色设定前缀位于系统提示词头部；源码、Web 与角色设定后缀段落位于第一方可复用指令之后，且不含 checkout 路径或 URL，因此工具与配置一致时，不同的 checkout 或端口不会改变系统提示词；值变化时追加一份运行时上下文快照。安装或移除本 bundle 会改变进程之间的提示词前缀，与任何组合变更相同；不保证提供方复用缓存。
 
 ## 已知限制与延期工作
 

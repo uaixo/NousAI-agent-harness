@@ -4,20 +4,18 @@
  * replaces the stock `web-runtime` row. The plugin resolves the NousAI shell
  * dist (workspace knowledge of this bundle, never user config) and mounts the
  * shared Web runtime glue with the NousAI identity: dist serving over the
- * frontend-static fallback seat, the NousAI-worded harness-source and
- * web-surface prompt sections, the bash-visible web runtime variable, and the
- * URL line. The seat and readiness mechanics live in
- * `@deepseek-ai/dsh-web-app`'s `applyWebRuntime` so the two runtimes cannot
- * drift.
+ * frontend-static fallback seat, the `webApp` service, the NousAI-worded
+ * bash-visible web runtime variable, and the URL line. The seat and readiness
+ * mechanics live in `@deepseek-ai/dsh-web-app`'s `applyWebRuntime` so the two
+ * runtimes cannot drift; the NousAI-worded model context comes from the
+ * patch's restated `harness-dev-context` row.
  * @module @deepseek-ai/dsh-nousai-web-app
  */
 
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { HARNESS_SOURCE_SECTION } from '@deepseek-ai/dsh-app-boot'
 import { applyWebRuntime, parsePublicUrl } from '@deepseek-ai/dsh-web-app'
 import type {} from '@deepseek-ai/cordis-plugin-loader'
 import type {} from '@deepseek-ai/dsh-host-webserver'
@@ -36,16 +34,14 @@ export interface Config {
   /** Print the URL line on activation; a non-interactive layer can turn it off. */
   printUrl: boolean
   /**
-   * Register the model-visible surface context (the `app:web-surface` prompt
-   * section and the `DSH_WEB_URL` bash variable). A one-shot non-interactive
-   * layer can turn it off when its user is not in the GUI, so the
-   * orientation text would be false.
+   * Register the `DSH_WEB_URL` bash variable naming this GUI. A one-shot
+   * non-interactive layer can turn it off when its user is not in the GUI.
    */
   surfaceContext: boolean
   /**
    * Canonical HTTP(S) root to advertise in the printed and opened URL,
-   * `DSH_WEB_URL`, and the web-surface orientation, e.g.
-   * `https://app.example/ui/`, normalized to end in `/`. Configures no routing
+   * `DSH_WEB_URL`, and `webApp.getAdvertisedUrl()`, which supplies the Web GUI
+   * URL in agent runtime context, e.g. `https://app.example/ui/`, normalized to end in `/`. Configures no routing
    * or authentication; see the stock bundle's
    * [public deployments](../../web-app/README.md#public-deployments).
    * Absent or YAML `null` advertises the bind-address URL.
@@ -61,34 +57,8 @@ export const Config: z<Config> = z.object({
 })
 /* jscpd:ignore-end */
 
-/** This dsh installation's root, from either this package's source or built entry. */
-const SOURCE_ROOT = fileURLToPath(new URL('../../../..', import.meta.url))
-
 /** Services required before the web runtime can mount. */
 export const inject = ['webServer']
-
-/** Model-visible orientation and acceptance boundary for sessions created through `dsh web`. */
-function webSurfacePrompt(webUrl: string): string {
-  const updateContract = 'The client-plugin HMR receiver is active, but client-plugin changes reload without a refresh only while '
-    + '`pnpm run dev:web` is also running from this same checkout to rebuild their bundles; verify that watcher before promising automatic updates. '
-    + 'Every other change — the apps/web-nousai shell and plain packages — requires rebuilding the affected Web artifacts and verifying this existing URL after a page refresh. '
-  return `You are interacting with the user through the NousAI Harness Web GUI at ${webUrl}. `
-    + 'When the user refers to "this page", "this GUI", or "this app" without naming another target, they mean this GUI. '
-    + 'The browser provides no implicit DOM, route, or screenshot context. '
-    + updateContract
-    + 'Starting another server does not update this GUI. '
-    + 'The apps/web-nousai Vite entry builds the shell but is not a standalone application because only dsh web injects window.__DSH_BOOT__. '
-    + 'Do not start a replacement server unless the user asks; if one is needed, use a managed background job and verify its exact URL.'
-}
-
-/** Register the NousAI-worded harness-source section (stock name and order, rebranded text). */
-function addNousAiSourceSection(promptCtx: Context): void {
-  promptCtx.systemPrompt.section({
-    name: HARNESS_SOURCE_SECTION,
-    order: promptCtx.systemPrompt.getSectionOrder('HARNESS_SOURCE'),
-    text: `The NousAI Harness implementation checkout is at ${SOURCE_ROOT}. The checkout location and current working directory are separate values and may differ; never infer the working directory from this path. Use pwd to determine the current working directory. Use this checkout only to inspect or extend the harness itself.`,
-  })
-}
 
 /**
  * Dist location is workspace knowledge of this bundle: anchored on the
@@ -118,8 +88,6 @@ export function apply(ctx: Context, config: Config): void {
   applyWebRuntime(ctx, config, {
     pluginName: name,
     distIndex: () => internals.resolveDistIndex(),
-    harnessSource: addNousAiSourceSection,
-    surfacePrompt: webSurfacePrompt,
     webUrlDescription: 'Advertised URL of the NousAI Harness Web GUI serving this session.',
   })
 }
