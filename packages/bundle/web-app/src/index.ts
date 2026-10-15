@@ -4,9 +4,9 @@
  * manifest field). The plugin owns the browser-surface glue: it resolves
  * the built frontend dist (workspace knowledge of this bundle, never user
  * config), mounts the `frontend-static` fallback owner over it, registers the
- * harness-source and web-surface prompt sections, the bash-visible web runtime
- * variable, the process-token URL line, and the default-browser handoff. An
- * advertised `publicUrl` replaces the published bind-address URL. Non-loopback
+ * bash-visible web runtime variable, the process-token URL line, and the
+ * default-browser handoff, and provides the `webApp` service. An advertised
+ * `publicUrl` replaces the published bind-address URL. Non-loopback
  * HTTP binds trigger an exposure warning. App command-line values arrive
  * through the `webStartup` service expressions in the bundle patch.
  * @module @deepseek-ai/dsh-web-app
@@ -14,15 +14,13 @@
 
 import { spawn, type ChildProcess } from 'node:child_process'
 import { createRequire } from 'node:module'
-import { isIP } from 'node:net'
 import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { addHarnessSourceSection, auditStartupEntries } from '@deepseek-ai/dsh-app-boot'
+import { auditStartupEntries } from '@deepseek-ai/dsh-app-boot'
 import type {} from '@deepseek-ai/dsh-client-connection'
 import * as FrontendStatic from '@deepseek-ai/dsh-host-frontend-static'
-import { isLoopbackHost, normalizeBindAddress } from '@deepseek-ai/dsh-host-webserver'
+import { bindUrlHost, isLoopbackHost } from '@deepseek-ai/dsh-host-webserver'
 import { launchedThroughSsh, launchEnvironmentOf } from '@deepseek-ai/dsh-launch-environment'
 import { scrubbedParentEnv } from '@deepseek-ai/dsh-subprocess'
 import type {} from '@deepseek-ai/cordis-plugin-loader'
@@ -32,11 +30,25 @@ import { parsePublicUrl } from './public-url.ts'
 /** The advertised-root parser, shared with rebranding bundles that restate this plugin's `publicUrl` field. */
 export { parsePublicUrl } from './public-url.ts'
 
+/** The Web GUI this process serves, provided by the `web-runtime` row. */
+export interface WebApp {
+  /**
+   * The URL this GUI advertises, also used for `DSH_WEB_URL` and the startup URL line.
+   * @returns the configured `publicUrl`, otherwise the listener origin.
+   */
+  getAdvertisedUrl(): string
+}
+
+declare module '@deepseek-ai/cordis' {
+  interface Context {
+    /** The Web GUI this process serves; absent when no Web runtime is mounted. */
+    webApp: WebApp
+  }
+}
+
 /** Stable Cordis plugin name. */
 export const name = 'web-app'
 
-/** This dsh installation's root, from either this package's source or built entry. */
-const SOURCE_ROOT = fileURLToPath(new URL('../../../..', import.meta.url))
 const ANNOUNCED_ROOTS = new WeakSet<Context>()
 
 /** Services required before the web runtime can mount. */
@@ -49,16 +61,14 @@ export interface Config {
   /** Print the URL line on activation; a non-interactive layer can turn it off. */
   printUrl: boolean
   /**
-   * Register the model-visible surface context (the `app:web-surface` prompt
-   * section and the `DSH_WEB_URL` bash variable). A one-shot non-interactive
-   * layer can turn it off when its user is not in the GUI, so the
-   * orientation text would be false.
+   * Register the `DSH_WEB_URL` bash variable naming this GUI. A one-shot
+   * non-interactive layer can turn it off when its user is not in the GUI.
    */
   surfaceContext: boolean
   /**
    * Canonical HTTP(S) root to advertise in the printed and opened URL,
-   * `DSH_WEB_URL`, and the web-surface orientation, e.g.
-   * `https://app.example/ui/`, normalized to end in `/`. Configures no routing
+   * `DSH_WEB_URL`, and `webApp.getAdvertisedUrl()`, which supplies the Web GUI
+   * URL in agent runtime context, e.g. `https://app.example/ui/`, normalized to end in `/`. Configures no routing
    * or authentication; see [public deployments](../README.md#public-deployments).
    * Absent or YAML `null` advertises the bind-address URL.
    */
@@ -105,68 +115,6 @@ try {
   process.exitCode = 1
 }
 `
-
-/**
- * Local root URL of the active Web server, using the browser-compatible form
- * of its bind address and brackets for IPv6 literals. Non-loopback binds such
- * as a container's Pod address advertise that address.
- * @param ctx - context carrying the webServer service.
- * @param pluginName - diagnostic prefix of a failed resolution.
- * @throws when the runtime resolves without a bound webServer, or when the bind
- *   address has no URL form (see {@link advertisedBindHost}).
- */
-function localWebUrl(ctx: Context, pluginName: string): string {
-  const webServer = ctx.get('webServer')
-  const port = webServer?.port
-  if (webServer === undefined || port === undefined) {
-    throw new Error(`${pluginName}: webServer service missing while resolving Web runtime`)
-  }
-  const host = advertisedBindHost(webServer.host, pluginName)
-  return `${webServer.protocol}//${isIP(host) === 6 ? `[${host}]` : host}:${String(port)}`
-}
-
-/**
- * Bind address in a URL. Loopback addresses use their canonical address text,
- * so browsers treat them as local, trustworthy origins: a genuinely mapped
- * literal such as `::ffff:127.0.0.1` reads as `127.0.0.1`, and a dotted-quad
- * tail reads as the address it names, so `::0.0.0.1` reads as `::1` rather
- * than as `0.0.0.1`. Interface zone IDs cannot appear in a URL; only a
- * redundant loopback zone can be dropped.
- * @param host - webserver bind address.
- * @param pluginName - diagnostic prefix of the rejection.
- * @returns the zone-free URL host.
- * @throws when a non-loopback zone requires an explicit public URL.
- */
-function advertisedBindHost(host: string, pluginName: string): string {
-  const zoneAt = host.indexOf('%')
-  const bare = zoneAt === -1 ? host : host.slice(0, zoneAt)
-  if (isLoopbackHost(bare)) return normalizeBindAddress(bare)
-  if (zoneAt === -1) return host
-  throw new Error(
-    `${pluginName}: bind address ${JSON.stringify(host)} carries an interface zone id, which no URL can express;`
-    + ' pass --public-url with the root browsers actually reach it through',
-  )
-}
-
-/** Resolve the advertised root: this plugin's canonical `publicUrl`, or the bind-address URL (loopback when bound to loopback). */
-function appRootUrl(ctx: Context, publicUrl: string | undefined, pluginName: string): string {
-  if (publicUrl !== undefined) return publicUrl
-  return localWebUrl(ctx, pluginName)
-}
-
-/** Model-visible orientation and acceptance boundary for sessions created through `dsh web`. */
-function webSurfacePrompt(webUrl: string): string {
-  const updateContract = 'The client-plugin HMR receiver is active, but client-plugin changes reload without a refresh only while '
-    + '`pnpm run dev:web` is also running from this same checkout to rebuild their bundles; verify that watcher before promising automatic updates. '
-    + 'Every other change — the apps/web shell and plain packages — requires rebuilding the affected Web artifacts and verifying this existing URL after a page refresh. '
-  return `You are interacting with the user through the DeepSeek Harness Web GUI at ${webUrl}. `
-    + 'When the user refers to "this page", "this GUI", or "this app" without naming another target, they mean this GUI. '
-    + 'The browser provides no implicit DOM, route, or screenshot context. '
-    + updateContract
-    + 'Starting another server does not update this GUI. '
-    + 'The apps/web Vite entry builds the shell but is not a standalone application because only dsh web injects window.__DSH_BOOT__. '
-    + 'Do not start a replacement server unless the user asks; if one is needed, use a managed background job and verify its exact URL.'
-}
 
 /**
  * Dist location is workspace knowledge of this bundle: anchored on the
@@ -243,18 +191,14 @@ export interface WebRuntimeIdentity {
   pluginName: string
   /** Resolve the built shell dist's index.html; read once per mount. */
   distIndex: () => string
-  /** Register the branded harness-source prompt section against the prompt context. */
-  harnessSource: (promptCtx: Context) => void
-  /** Model-visible orientation for the surface at the advertised root. */
-  surfacePrompt: (webUrl: string) => string
   /** Model-visible description of the `DSH_WEB_URL` bash variable. */
   webUrlDescription: string
 }
 
 /**
  * Mount one branded Web runtime: dist serving over the frontend-static
- * fallback seat, the surface prompt sections, the bash runtime variable, and
- * the Loader-settled URL line and default-browser handoff.
+ * fallback seat, the `webApp` service, the bash runtime variable, and the
+ * Loader-settled URL line and default-browser handoff.
  * @param ctx - plugin context carrying the webServer service.
  * @param config - validated {@link Config}.
  * @param identity - the mounting bundle's {@link WebRuntimeIdentity}.
@@ -264,30 +208,30 @@ export function applyWebRuntime(ctx: Context, config: Config, identity: WebRunti
   // the string transform and reaches here, meaning unset.
   const publicUrl = config.publicUrl ?? undefined
   const boundHost = ctx.webServer.host
-  if (publicUrl === undefined) advertisedBindHost(boundHost, identity.pluginName)
+  if (publicUrl === undefined && bindUrlHost(boundHost) === undefined) {
+    throw new Error(
+      `${identity.pluginName}: bind address ${JSON.stringify(boundHost)} carries an interface zone id, which no URL can express;`
+      + ' pass --public-url with the root browsers actually reach it through',
+    )
+  }
   if (ctx.webServer.protocol === 'http:' && !isLoopbackHost(boundHost)) {
     console.warn(`dsh web: listening on ${boundHost} over plain HTTP; restrict this port to a trusted proxy or network`)
   }
   // The bind URL belongs to this host. Under SSH, the operator reaches it
   // through a local forwarding address that this process cannot derive.
   const handoffBrowser = config.openBrowser && !launchedThroughSsh(launchEnvironmentOf(ctx))
+  /** The advertised root: the canonical `publicUrl`, or the listener's own origin. */
+  const appRootUrl = (): string => publicUrl ?? ctx.webServer.getOrigin()
+  ctx.provide('webApp', { getAdvertisedUrl: appRootUrl } satisfies WebApp)
   ctx.plugin(FrontendStatic, { distIndex: identity.distIndex() })
   if (config.surfaceContext) {
-    ctx.inject(['systemPrompt'], (promptCtx) => {
-      identity.harnessSource(promptCtx)
-      promptCtx.systemPrompt.section({
-        name: 'app:web-surface',
-        order: promptCtx.systemPrompt.getSectionOrder('WEB_SURFACE'),
-        text: () => identity.surfacePrompt(appRootUrl(promptCtx, publicUrl, identity.pluginName)),
-      })
-    })
     ctx.inject(['shellEnv'], (runtimeCtx) => {
       runtimeCtx.shellEnv.register({
         name: 'web-runtime',
         variables: {
           [DSH_WEB_URL]: { description: identity.webUrlDescription },
         },
-        resolve: () => ({ [DSH_WEB_URL]: appRootUrl(runtimeCtx, publicUrl, identity.pluginName) }),
+        resolve: () => ({ [DSH_WEB_URL]: appRootUrl() }),
       })
     })
   }
@@ -300,7 +244,7 @@ export function applyWebRuntime(ctx: Context, config: Config, identity: WebRunti
       // hand-built tree without a Loader is already the complete tree.
       const announceReady = (): void => {
         if (ANNOUNCED_ROOTS.has(connectionCtx.root)) return
-        const webUrl = appRootUrl(connectionCtx, publicUrl, identity.pluginName)
+        const webUrl = appRootUrl()
         const authenticatedUrl = connectionCtx.connection.authenticatedUrl(webUrl)
         ANNOUNCED_ROOTS.add(connectionCtx.root)
         if (config.printUrl) {
@@ -337,8 +281,8 @@ export function applyWebRuntime(ctx: Context, config: Config, identity: WebRunti
 }
 
 /**
- * Mount the Web runtime: dist serving, surface prompt, the bash runtime
- * variable, the URL line, and the default-browser handoff.
+ * Mount the Web runtime: dist serving, the bash runtime variable, the URL
+ * line, and the default-browser handoff.
  * @param ctx - plugin context carrying the webServer service.
  * @param config - validated {@link Config}.
  */
@@ -346,8 +290,6 @@ export function apply(ctx: Context, config: Config): void {
   applyWebRuntime(ctx, config, {
     pluginName: name,
     distIndex: () => internals.resolveDistIndex(),
-    harnessSource: promptCtx => void addHarnessSourceSection(promptCtx, SOURCE_ROOT),
-    surfacePrompt: webSurfacePrompt,
     webUrlDescription: 'Advertised URL of the DeepSeek Harness Web GUI serving this session.',
   })
 }
