@@ -316,7 +316,7 @@ jobs:
           echo "path=$store_path" >> "$GITHUB_OUTPUT"
 
       # Pull requests restore the pnpm store and Playwright caches without paying
-      # compression and upload on the required path. No master job saves these
+      # compression and upload on the required path. No default-branch job saves these
       # hosted cache keys, so each restore-keys fallback hits the matching archived
       # entry until it evicts, after which the store is cold. Self-hosted runners
       # reuse the shared persistent store instead of restoring the remote archive.
@@ -483,7 +483,7 @@ jobs:
   # `needs`. `needs` cannot cross workflow files: native Windows jobs report
   # the separate "windows checks passed" verdict from ci-windows.yml, Python
   # jobs report "python checks passed" from ci-python.yml, and Wine plus the
-  # master-only runtime targets live in ci-master.yml.
+  # default-branch-only runtime targets live in ci-master.yml.
   # An explicit status function runs the verdict after failed/skipped needs
   # without keeping a cancelled workflow alive for an obsolete verdict.
   all-checks-passed:
