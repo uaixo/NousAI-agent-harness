@@ -27,20 +27,20 @@ id: 2026-09-24-fork-runtime-context-kind
 baseline: false
 changes:
   - root: "event:agent/inbox/spliced"
-    previous: "2026-10-13-user-rpc-principal"
-    after: "3eefa836dc6c2a7b27338dcf76117966eb9de1063f3afc6bdcef1094877491c2"
+    previous: "2026-10-22-action-card-status"
+    after: "949ec950241f39efd610be97ef62077e3e5402e0b394286bfa881867b2513c97"
     decision: same-version
   - root: "event:developer/message"
-    previous: "2026-10-13-user-rpc-principal"
-    after: "f8a6d043e51d5d4f8450147792c96b74feff9b4dabd70022d7bbf4229a2caa52"
+    previous: "2026-10-22-action-card-status"
+    after: "3707261f2e498fe335f9f5859b3752f33386783d08a62cb1ffa67bdbde5612d8"
     decision: same-version
   - root: "event:session/title-llm-request"
-    previous: "2026-10-13-user-rpc-principal"
-    after: "49fe49435af64391bdbcc72d330d07c42936dbd1076206bda28b25c38e6ba954"
+    previous: "2026-10-22-action-card-status"
+    after: "5aefe008192931e2bdc8ee7c4b99005ab8bcd5474da3ff4d9f6aa242230a0048"
     decision: same-version
   - root: "event:user/message"
-    previous: "2026-10-13-user-rpc-principal"
-    after: "d8af7e56560b153f7eb5ebced227af6908b95e4826eea32eb4264ee0eac98d94"
+    previous: "2026-10-22-action-card-status"
+    after: "934ef25a62bc219ef59d1772a5be612c3652713b1c659ccd0eecb77e45f362e4"
     decision: same-version
 ```
 

@@ -142,13 +142,6 @@ const legacyPromptSchema = zod.object({ source: zod.string().nullable(), web: zo
 /** Value-bearing paragraphs of the latest nonempty system prompt a Session committed; `null` where it has none. */
 type LegacyPrompt = zod.infer<typeof legacyPromptSchema>
 
-declare module '@deepseek-ai/dsh-session-projection/types' {
-  interface SessionProjectionStateMap {
-    /** Value-bearing harness-source and Web-surface paragraphs of the latest nonempty admitted system prompt. */
-    harnessDevLegacyPrompt: LegacyPrompt
-  }
-}
-
 /** The first frozen form among `forms` whose complete paragraph the prompt holds, or `null` when it holds none. */
 function legacyParagraphOf(prompt: string, forms: readonly { prefix: string; suffix: string }[]): string | null {
   for (const form of forms) {
@@ -191,9 +184,10 @@ const ADMITS_NOTHING: LegacyPrompt = { source: null, web: null }
  * projection that keeps a Session's admitted paragraphs.
  * @param ctx - plugin context with every {@link inject} service.
  * @param config - validated {@link Config}.
+ * @returns after the projection reader and prompt registrations are ready.
  */
-export function apply(ctx: Context, config: Config): void {
-  ctx.sessionProjections.register({
+export async function apply(ctx: Context, config: Config): Promise<void> {
+  const legacyPromptProjectionHandle = await ctx.sessionProjections.register({
     key: LEGACY_PROMPT,
     stateVersion: 1,
     stateSchema: legacyPromptSchema,
@@ -202,8 +196,7 @@ export function apply(ctx: Context, config: Config): void {
   })
   const admitted = (context: AssembleContext): LegacyPrompt => {
     const session = context.agent?.session
-    // This plugin registers the unit above, so its state exists for every Session.
-    return session === undefined ? ADMITS_NOTHING : ctx.sessionProjections.stateOf(session, LEGACY_PROMPT) as LegacyPrompt
+    return session === undefined ? ADMITS_NOTHING : legacyPromptProjectionHandle.stateOf(session)
   }
   ctx.systemPrompt.section({
     name: HARNESS_SOURCE,

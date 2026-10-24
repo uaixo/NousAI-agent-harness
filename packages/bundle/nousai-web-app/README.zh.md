@@ -55,6 +55,7 @@ GUI 提供 NousAI 外壳：页面外观、启动页字标、以及侧边栏与�
 | [`cordis.patch.yml`](cordis.patch.yml) | 补丁：停用的原生运行时行与官方品牌行、重述的 NousAI 角色设定、插入的运行时与品牌行 |
 | [`src/index.ts`](src/index.ts) | `nousai-web-runtime` 胶水插件：dist 解析与 NousAI `applyWebRuntime` 身份 |
 | — | 不发布运行时不变量伴随入口：每项贡献（frontend-static 子插件、`webApp` 服务、bash 变量）都随 fiber 由注册表释放，本 bundle 自身不持有可审计的可变状态 |
+| [`tests/cordis-patch.spec.ts`](tests/cordis-patch.spec.ts) | 补丁的 `system-prompt` 行以已注册的提示词变量渲染 NousAI 角色设定 |
 | [`tests/nousai-web-app.spec.ts`](tests/nousai-web-app.spec.ts) | dist 解析、`webApp` 服务、bash 变量、URL 行就绪、花名册身份 |
 
 </details>
@@ -81,15 +82,15 @@ GUI 提供 NousAI 外壳：页面外观、启动页字标、以及侧边栏与�
 
 #### 模型看到什么
 
-固定的 "powered by DeepSeek Harness" 身份开场被抑制（`includeHarnessIdentity: false`）；部署角色设定前缀改为点名 NousAI Harness，角色设定后缀则保留原生的 cwd 行，位于可复用的第一方指令之后。重述后的 `harness-dev-context` 行让其 `harness:source` 与 `app:web-surface` 段及两行运行时上下文以 NousAI 措辞承载原生定向信息；`surfaceContext` 为 true 时，`DSH_WEB_URL` 的描述点名 NousAI Harness Web GUI。结构、段名与顺序与原 bundle 一致。
+固定的 "powered by DeepSeek Harness" 身份开场被抑制（`includeHarnessIdentity: false`）；部署角色设定前缀改为点名 NousAI Harness。重述后的 `harness-dev-context` 行让其 `harness:source` 与 `app:web-surface` 段及两行运行时上下文以 NousAI 措辞承载原生定向信息；`surfaceContext` 为 true 时，`DSH_WEB_URL` 的描述点名 NousAI Harness Web GUI。结构、段名与顺序与原 bundle 一致。
 
 #### Token 影响
 
-与原 Web 界面形状相同：一行角色设定前缀、两段不含值的提示词、一行角色设定后缀、两行运行时上下文、两行受管环境变量说明；提示词在进程之间恒定。
+与原 Web 界面形状相同：一行角色设定前缀、两段不含值的提示词、两行运行时上下文、两行受管环境变量说明；提示词在进程之间恒定。
 
 #### KV 缓存影响
 
-角色设定前缀位于系统提示词头部；源码、Web 与角色设定后缀段落位于第一方可复用指令之后，且不含 checkout 路径或 URL，因此工具与配置一致时，不同的 checkout 或端口不会改变系统提示词；值变化时追加一份运行时上下文快照。安装或移除本 bundle 会改变进程之间的提示词前缀，与任何组合变更相同；不保证提供方复用缓存。
+角色设定前缀位于系统提示词头部；源码与 Web 段落位于第一方可复用指令之后，且不含 checkout 路径或 URL，因此工具与配置一致时，不同的 checkout 或端口不会改变系统提示词；值变化时追加一份运行时上下文快照。安装或移除本 bundle 会改变进程之间的提示词前缀，与任何组合变更相同；不保证提供方复用缓存。
 
 ## 已知限制与延期工作
 
