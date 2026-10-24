@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Application Web NousAI",
+    "description": "Fournit l'interface Web aux couleurs de NousAI et connecte la configuration d'exécution requise par l'application Web."
+  }
+}

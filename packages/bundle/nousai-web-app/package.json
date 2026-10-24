@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-nousai-web-app",
   "description": "The NousAI-branded browser-surface bundle: a patch layer over dsh-web-app that serves the NousAI shell dist, shadows the DeepSeek-branded welcome notice, and rebrands the model-facing product identity",
-  "version": "0.2.1-rc.2",
+  "version": "0.2.1-rc.3",
   "publishConfig": {
     "access": "public"
   },
@@ -20,9 +20,11 @@
     },
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./src/*": "./src/*",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
   },
   "files": [
+    "locale/*.json",
     "lib/index.js",
     "cordis.patch.yml",
     "lib/types/**/*.d.ts"
