@@ -994,7 +994,9 @@ test('keeps trusted preflight before token minting and required policy unconditi
   const source = readFileSync(new URL('../workflows/issue-policy.yml', import.meta.url), 'utf8')
   const job = source.slice(source.indexOf('  policy:'))
   assert.ok(job.includes('    name: Issue policy'))
-  assert.ok(!job.slice(0, job.indexOf('    steps:')).includes('    if:'))
+  // This fork runs the policy only on the upstream repository its config names.
+  const conditions = job.slice(0, job.indexOf('    steps:')).split('\n').filter(line => line.startsWith('    if:'))
+  assert.deepEqual(conditions, ["    if: github.repository == 'deepseek-harness/deepseek-harness'"])
   assert.ok(source.includes('types: [opened, edited, synchronize, reopened, labeled, unlabeled, ready_for_review, review_requested]'))
   const steps = job.split('      - name: ').slice(1)
   assert.equal(steps.length, 4)

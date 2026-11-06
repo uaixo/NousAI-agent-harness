@@ -27,20 +27,20 @@ id: 2026-09-24-fork-runtime-context-kind
 baseline: false
 changes:
   - root: "event:agent/inbox/spliced"
-    previous: "2026-10-13-liveshare-share-viewer-principal"
-    after: "252867992c9f23e29922b7415875b9fa8fc1188cb486d77636a31412de0c6ef2"
+    previous: "2026-10-27-subagent-settlement-attribution"
+    after: "df8f90d5e51683acccbe7c7960e9bae7697c2f8ea8b2dbe920b9b3b5af09fd41"
     decision: same-version
   - root: "event:developer/message"
-    previous: "2026-10-13-liveshare-share-viewer-principal"
-    after: "4b91c512237e2ee1b66dad929bfa39cb8e471b368031bcefd79442444ab628fa"
+    previous: "2026-10-27-subagent-settlement-attribution"
+    after: "8a5ea04e33ce64f8734ef5a4ed94cdfc772941bf919aa4af913f15f340f9365b"
     decision: same-version
   - root: "event:session/title-llm-request"
-    previous: "2026-10-13-liveshare-share-viewer-principal"
-    after: "76d261221bb4aebd0b9c49dfb1ac910a9d16f9d49ced4e78216b98da6b208ea0"
+    previous: "2026-10-27-subagent-settlement-attribution"
+    after: "e24f3d5e4a0f8e81020dc5ad5d9f83beaa11ca9648d1e65f55b396ee2f7f1cda"
     decision: same-version
   - root: "event:user/message"
-    previous: "2026-10-13-liveshare-share-viewer-principal"
-    after: "9e28c492af63514b2cd771a29cd33a84e9c2e11624b80e2f456e7639765d8508"
+    previous: "2026-10-27-subagent-settlement-attribution"
+    after: "d546670538d944660b3081ad37135ed056d2da177806f8e4b98cec86485a5578"
     decision: same-version
 ```
 

@@ -91,6 +91,7 @@ describe('ui-nousai-brand browser plugin', () => {
       usePanelInfo: unusedHook, useSessions: unusedHook, useSessionStatus: unusedHook, useSessionRetainInfo: unusedHook,
       useWorkspaces: unusedHook, useResource: unusedHook,
       useRemoteAccess: unusedHook, useSessionAccess: unusedHook, useWorkspaceAccess: unusedHook,
+      useContextMenu: unusedHook,
     }
     const view = render(<NousAiWelcomeSkip {...props} />)
     expect(view.container.innerHTML).toBe('')
