@@ -5,7 +5,8 @@
  * winning priority, the shadowed occupant survives on the ledger and returns
  * when the plugin fiber is disposed (HMR safety), and the step component
  * completes the coordinator step exactly once without rendering chrome. The
- * node half stays inert.
+ * brand components pass the host's mark size and class through and render the
+ * name without its leading mark. The node half stays inert.
  */
 import { Context } from '@deepseek-ai/cordis'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -100,6 +101,16 @@ describe('ui-nousai-brand browser plugin', () => {
     // A re-render with a fresh callback identity must not complete again.
     view.rerender(<NousAiWelcomeSkip {...props} complete={vi.fn()} />)
     expect(complete).toHaveBeenCalledTimes(1)
+  })
+
+  it('renders the host-sized mark and the name without its leading mark', () => {
+    // Unit builds resolve ui-primitives to the stock artwork; the NousAI shell
+    // build swaps in the NousAI marks behind the same props.
+    const mark = render(<NousAiBrandMark size={32} className="host-mark" />).container.querySelector('svg')
+    expect(mark?.getAttribute('width')).toBe('32')
+    expect(mark?.getAttribute('class')).toBe('host-mark')
+    const name = render(<NousAiBrandName />).container.querySelector('svg')
+    expect(name?.getAttribute('viewBox')).toBe('26 0 156 24')
   })
 
   it('node half is a pure roster entry', () => {

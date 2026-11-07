@@ -19,7 +19,8 @@
 # The official-brand row fills the same single-kind browser brand slots this
 # layer's ui-nousai-brand occupants claim; under an official-profile client
 # build both would register at the same priority and the slot registry throws
-# on the loser. The NousAI layer replaces the official occupants outright.
+# on the loser. The NousAI layer replaces the official brand-slot occupants
+# outright, and the row's DeepSeek whale frame on the blank home stays out.
 - id: ui-brand-official
   disabled: true
 

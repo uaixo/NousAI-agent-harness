@@ -48,7 +48,7 @@ NousAI 部署的浏览器品牌来自本插件：侧边栏与会话主视觉品�
 <details>
 <summary>实现内部——点击展开</summary>
 
-浏览器半注册三个品牌插槽占位者——`sidebar.brand.mark`、`sidebar.brand.name` 与 `conversation.hero.brand.mark`——渲染从 `ui-primitives` 导入的 NousAI 标识，而 NousAI 构建把该模块替换为 NousAI 品牌模块，插槽占位者与所有直接消费者因此共用同一份图形。主视觉占位者是承重的：`ui-brand-official` 只注册两个侧边栏插槽，缺少本占位者时主视觉会渲染 `ui-conversation` 自带的 DeepSeek 动画鱼形标识。它还以优先级 −1 遮蔽原有 `settings.onboarding` 槽位单元 id `welcome-notice`（由 [`ui-settings-models`](../ui-settings-models/README.zh.md) 以默认优先级注册），替换为一个立即完成、不渲染任何内容的步骤。所有注册都随 fiber 释放。
+浏览器半注册三个品牌插槽占位者——`sidebar.brand.mark`、`sidebar.brand.name` 与 `conversation.hero.brand.mark`——渲染从 `ui-primitives` 导入的 NousAI 标识，而 NousAI 构建把该模块替换为 NousAI 品牌模块，插槽占位者与所有直接消费者因此共用同一份图形。主视觉占位者是承重的：`ui-brand-official` 填充两个侧边栏插槽与 `conversation.hero.frame` 鲸鱼装饰层，但不填充 `conversation.hero.brand.mark`，缺少本占位者时主视觉会渲染 `ui-conversation` 自带的 DeepSeek 动画鱼形标识。它还以优先级 −1 遮蔽原有 `settings.onboarding` 槽位单元 id `welcome-notice`（由 [`ui-settings-models`](../ui-settings-models/README.zh.md) 以默认优先级注册），替换为一个立即完成、不渲染任何内容的步骤。所有注册都随 fiber 释放。
 
 ### 源码地图
 
