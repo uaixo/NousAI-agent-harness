@@ -3,7 +3,7 @@
 - status: Completed
 - button "Completed in {{duration}}" [expanded]
 - button "Ran code and called tools" [expanded]
-- button "Context injection runtime-context"
+- button "Context injection Runtime context"
 - button "Context injection time-context"
 - button "Code Create a file with the optional editor"
 - button "Tool call str_replace_editor · create"

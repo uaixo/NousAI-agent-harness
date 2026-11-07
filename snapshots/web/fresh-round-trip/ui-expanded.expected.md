@@ -12,7 +12,7 @@
 - status: Completed
 - button "Completed in {{duration}}" [expanded]
 - button "Ran commands" [expanded]
-- button "Context injection runtime-context"
+- button "Context injection Runtime context"
 - button "Context injection time-context"
 - button "Think The user wants me to run a simple bash command and reply with \"DONE\"."
 - button "Bash Echo the test string"

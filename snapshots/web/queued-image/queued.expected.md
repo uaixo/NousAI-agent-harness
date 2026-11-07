@@ -9,7 +9,7 @@
   - button "More conversation views"
 - text: Reply with a one-sentence description of event sourcing, then stop. {{clock}}
 - button "Copy"
-- button "Context injection runtime-context"
+- button "Context injection Runtime context"
 - button "Context injection time-context"
 - paragraph: partial
 - status: Deep diving

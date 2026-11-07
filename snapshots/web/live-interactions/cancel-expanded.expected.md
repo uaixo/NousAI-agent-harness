@@ -12,7 +12,7 @@
 - status: Stopped
 - button "Stopped" [disabled] [expanded]
 - button "Injected context" [expanded]
-- button "Context injection runtime-context"
+- button "Context injection Runtime context"
 - button "Context injection time-context"
 - paragraph: partial
 - text: Stopped

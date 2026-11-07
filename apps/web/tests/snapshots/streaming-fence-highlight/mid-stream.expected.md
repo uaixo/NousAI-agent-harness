@@ -9,7 +9,7 @@
   - button "More conversation views"
 - text: Stream one TypeScript fence for the highlighting snapshot. {{clock}}
 - button "Copy"
-- button "Context injection runtime-context"
+- button "Context injection Runtime context"
 - button "Context injection time-context"
 - text: ts
 - button "Wrap lines" [pressed]

@@ -14,7 +14,7 @@
 - status: Completed
 - button "Completed in {{duration}}" [expanded]
 - button "Injected context" [expanded]
-- button "Context injection runtime-context"
+- button "Context injection Runtime context"
 - button "Context injection user-invoke-demo"
 - button "Context injection time-context"
 - paragraph: USER_INVOKE_REPLY acknowledged; following the injected skill.

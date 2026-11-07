@@ -11,7 +11,7 @@
 - status: Completed
 - button "Completed in {{duration}}" [expanded]
 - button "Called tools" [expanded]
-- button "Context injection runtime-context"
+- button "Context injection Runtime context"
 - button "Context injection skill-catalog"
 - button "Think Load the requested skill."
 - button "Skill editing-cordis-compositions" [expanded]
