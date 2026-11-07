@@ -46,7 +46,7 @@ GUI 提供 NousAI 外壳：页面外观、启动页字标、以及侧边栏与�
 <details>
 <summary>实现内部——点击展开</summary>
 
-补丁停用原生 `web-runtime` 行（frontend-static 回退席位是单一所有者，因此采用停用后插入而非遮蔽）与 `ui-brand-official` 行（其官方构建下的占位者会与本层的 NousAI 占位者争抢单一型品牌插槽），插入本包的 `nousai-web-runtime` 胶水与 `ui-nousai-brand` 浏览器行，以 `includeHarnessIdentity: false` 加 NousAI 角色设定重述 `system-prompt` 行，并以 NousAI 产品措辞（`productName: NousAI Harness`、`harnessName: the harness`、`webShell: apps/web-nousai`）重述 [`harness-dev-context`](../../context/harness-dev-context/README.zh.md) 行。胶水插件以 `@deepseek-ai/dsh-web-frontend-nousai` 包 manifest 为锚解析 NousAI 外壳 dist——这是本 bundle 的工作区知识，绝非用户配置——并以 NousAI 身份挂载 [`dsh-web-app`](../web-app/README.zh.md) 导出的共享 `applyWebRuntime` 胶水：dist 服务、`harness-dev-context` 读取的 `webApp` 服务、NousAI 措辞的 `DSH_WEB_URL` bash 变量、URL 行、以及默认浏览器交接。席位与就绪机制位于共享胶水中，因此两个运行时不会漂移。
+补丁停用原生 `web-runtime` 行（frontend-static 回退席位是单一所有者，因此采用停用后插入而非遮蔽）与 `ui-brand-official` 行（其官方构建下的占位者会与本层的 NousAI 占位者争抢单一型品牌插槽，其在空白首页上的 DeepSeek 鲸鱼装饰也不进入 NousAI 外壳），插入本包的 `nousai-web-runtime` 胶水与 `ui-nousai-brand` 浏览器行，以 `includeHarnessIdentity: false` 加 NousAI 角色设定重述 `system-prompt` 行，并以 NousAI 产品措辞（`productName: NousAI Harness`、`harnessName: the harness`、`webShell: apps/web-nousai`）重述 [`harness-dev-context`](../../context/harness-dev-context/README.zh.md) 行。胶水插件以 `@deepseek-ai/dsh-web-frontend-nousai` 包 manifest 为锚解析 NousAI 外壳 dist——这是本 bundle 的工作区知识，绝非用户配置——并以 NousAI 身份挂载 [`dsh-web-app`](../web-app/README.zh.md) 导出的共享 `applyWebRuntime` 胶水：dist 服务、`harness-dev-context` 读取的 `webApp` 服务、NousAI 措辞的 `DSH_WEB_URL` bash 变量、URL 行、以及默认浏览器交接。席位与就绪机制位于共享胶水中，因此两个运行时不会漂移。
 
 ### 源码地图
 
