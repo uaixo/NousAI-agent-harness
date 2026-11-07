@@ -27,20 +27,20 @@ id: 2026-09-24-fork-runtime-context-kind
 baseline: false
 changes:
   - root: "event:agent/inbox/spliced"
-    previous: "2026-10-27-subagent-settlement-attribution"
-    after: "df8f90d5e51683acccbe7c7960e9bae7697c2f8ea8b2dbe920b9b3b5af09fd41"
+    previous: "2026-10-27-retry-control-input"
+    after: "512e033eaa769259c7c1873a3af681c053b2751d0143712c8d79f89d65c43c24"
     decision: same-version
   - root: "event:developer/message"
-    previous: "2026-10-27-subagent-settlement-attribution"
-    after: "8a5ea04e33ce64f8734ef5a4ed94cdfc772941bf919aa4af913f15f340f9365b"
+    previous: "2026-10-27-retry-control-input"
+    after: "6b15b3e09f05964baf457e13b8e6a273364586a41949822c7aeb13267abd78fa"
     decision: same-version
   - root: "event:session/title-llm-request"
-    previous: "2026-10-27-subagent-settlement-attribution"
-    after: "e24f3d5e4a0f8e81020dc5ad5d9f83beaa11ca9648d1e65f55b396ee2f7f1cda"
+    previous: "2026-10-27-retry-control-input"
+    after: "6b0db8ac215a3fa4ac088dc8e639fd54a234c738d70faebcf49cc6253c8efb56"
     decision: same-version
   - root: "event:user/message"
-    previous: "2026-10-27-subagent-settlement-attribution"
-    after: "d546670538d944660b3081ad37135ed056d2da177806f8e4b98cec86485a5578"
+    previous: "2026-10-27-retry-control-input"
+    after: "046badeb355e6d305e14e74dfbf728fc9704220ff6c1c983a0c3a419f8bb232f"
     decision: same-version
 ```
 
