@@ -16,8 +16,8 @@
   "include": [
     "src"
   ],
-  // The brand re-export module is vite-only assembly: it must reach the real
-  // ui-primitives barrel by relative path (the bare name is aliased to the
+  // The brand re-export module is vite-only assembly: it must reach the built
+  // ui-primitives library by relative path (the bare name is aliased to the
   // module itself), which project references cannot rewrite (TS2878). Vite
   // compiles it; the marks it re-exports stay in this program via `include`.
   "exclude": [

@@ -65,10 +65,9 @@ const merged: UserConfig = mergeConfig(
     plugins: basePlugins,
     resolve: {
       // Vite's internal alias plugin runs before every user plugin, so the
-      // swap must live in this array; order matters — the NousAI brand module
-      // must win over the stock ui-primitives source alias, so it goes first.
-      // The brand module itself reaches the real barrel through a relative
-      // import, which no bare-name alias rewrites.
+      // swap must live in this array, ahead of the stock entries. The brand
+      // module itself reaches the built ui-primitives library through a
+      // relative import, which no bare-name alias rewrites.
       alias: [
         { find: /^@deepseek-ai\/dsh-client-ui-primitives$/, replacement: here('./src/brand/ui-primitives-nousai.ts') },
         ...baseAlias,

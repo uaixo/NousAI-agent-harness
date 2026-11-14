@@ -2,7 +2,7 @@
  * NousAI web runtime glue behavior: dist resolution through this bundle's own
  * hook (the NousAI frontend package), the frontend-static child claiming the
  * fallback seat, the `webApp` service, the NousAI-worded bash runtime
- * variable, the advertised public root, and URL-line printing. The branch
+ * variable, the advertised public root, and entry URL printing. The branch
  * structure mirrors the stock web-app spec because the runtimes share their
  * seat and readiness mechanics.
  */
@@ -53,25 +53,25 @@ function fakeHttpServer(): { server: WebServer; seat: () => unknown } {
   return { server: server as WebServer, seat: () => fallback }
 }
 
-/** A fake Loader whose settlement the test controls (the URL line waits on it). */
+/** A fake Loader whose settlement the test controls (entry URL publication waits on it). */
 function provideLoader(ctx: Context, settle: () => Promise<void> = async () => {}): void {
   ctx.provide('loader', { await: settle, entries: () => [] } as never)
 }
 
-/** A fake Connection issuing deterministic process-token URLs (the announce waits on it). */
-function provideConnection(ctx: Context): void {
-  ctx.provide('connection', {
+/** An entry-URL provider issuing deterministic process-token URLs, standing in for the authentication provider. */
+function provideEntry(ctx: Context): void {
+  ctx.on('webserver/entry-url', (baseUrl, entries) => {
     // Adds the process token to the given canonical root, preserving any
     // public mount prefix the caller passed.
-    authenticatedUrl(baseUrl: string) {
-      const url = new URL(baseUrl)
-      url.searchParams.set('token', 'test-token')
-      return url.href
-    },
-    authorizeIndex: () => true,
-    requestRejection: () => undefined,
-    rpc: {},
-  } as never)
+    const url = new URL(baseUrl)
+    url.searchParams.set('token', 'test-token')
+    entries.push({ label: 'dsh web', url: url.href, open: true })
+  })
+}
+
+/** An empty Connection stand-in: frontend-static injects the service before claiming the seat. */
+function provideConnection(ctx: Context): void {
+  ctx.provide('connection', {} as never)
 }
 
 interface BashContribution {
@@ -99,6 +99,7 @@ describe('nousai-web-app runtime glue', () => {
     const { server, seat } = fakeHttpServer()
     ctx.provide('webServer', server)
     provideConnection(ctx)
+    provideEntry(ctx)
     const contributions = provideShellEnv(ctx)
     provideLoader(ctx)
     const log = vi.spyOn(console, 'log').mockImplementation(() => {})
@@ -119,7 +120,7 @@ describe('nousai-web-app runtime glue', () => {
     stageDist()
     const ctx = new Context()
     ctx.provide('webServer', fakeHttpServer().server)
-    provideConnection(ctx)
+    provideEntry(ctx)
     const contributions = provideShellEnv(ctx)
     provideLoader(ctx)
     const log = vi.spyOn(console, 'log').mockImplementation(() => {})
@@ -160,7 +161,7 @@ describe('nousai-web-app runtime glue', () => {
     stageDist()
     const ctx = new Context()
     ctx.provide('webServer', fakeHttpServer().server)
-    provideConnection(ctx)
+    provideEntry(ctx)
     const log = vi.spyOn(console, 'log').mockImplementation(() => {})
     apply(ctx, new Config({ openBrowser: false, printUrl: true, surfaceContext: true }))
     await new Promise(resolve => setTimeout(resolve, 0))
@@ -174,7 +175,7 @@ describe('nousai-web-app runtime glue', () => {
     // RPC immediately after observing it.
     const settled = new Context()
     settled.provide('webServer', fakeHttpServer().server)
-    provideConnection(settled)
+    provideEntry(settled)
     let release: () => void
     const settlement = new Promise<void>((resolve) => { release = resolve })
     provideLoader(settled, () => settlement)
@@ -192,7 +193,7 @@ describe('nousai-web-app runtime glue', () => {
     log.mockClear()
     const failed = new Context()
     failed.provide('webServer', fakeHttpServer().server)
-    provideConnection(failed)
+    provideEntry(failed)
     provideLoader(failed, async () => { throw new Error('boot failed') })
     apply(failed, new Config({ openBrowser: false, printUrl: true, surfaceContext: true }))
     await new Promise(resolve => setTimeout(resolve, 0))
@@ -203,7 +204,7 @@ describe('nousai-web-app runtime glue', () => {
     // line, no crash.
     log.mockClear()
     const torn = new Context()
-    provideConnection(torn)
+    provideEntry(torn)
     const child = torn.plugin((childCtx: Context) => {
       childCtx.provide('webServer', fakeHttpServer().server)
     })

@@ -27,20 +27,20 @@ id: 2026-09-24-fork-runtime-context-kind
 baseline: false
 changes:
   - root: "event:agent/inbox/spliced"
-    previous: "2026-10-27-retry-control-input"
-    after: "512e033eaa769259c7c1873a3af681c053b2751d0143712c8d79f89d65c43c24"
+    previous: "2026-11-05-timeline-priority-notice"
+    after: "c0b5cca049ea3d67d1fa6e8160e50113bacb5b57681445505cffc981d1fa3c82"
     decision: same-version
   - root: "event:developer/message"
-    previous: "2026-10-27-retry-control-input"
-    after: "6b15b3e09f05964baf457e13b8e6a273364586a41949822c7aeb13267abd78fa"
+    previous: "2026-11-05-timeline-priority-notice"
+    after: "ba2dd4062282b9512374faa497d85849265b3d0fb392d7d0df9e69572307750b"
     decision: same-version
   - root: "event:session/title-llm-request"
-    previous: "2026-10-27-retry-control-input"
-    after: "6b0db8ac215a3fa4ac088dc8e639fd54a234c738d70faebcf49cc6253c8efb56"
+    previous: "2026-11-05-timeline-priority-notice"
+    after: "9f2dd4b4d69d80db8990c382748cf904ea17e48bde27b8d2b25fd83da8eb867a"
     decision: same-version
   - root: "event:user/message"
-    previous: "2026-10-27-retry-control-input"
-    after: "046badeb355e6d305e14e74dfbf728fc9704220ff6c1c983a0c3a419f8bb232f"
+    previous: "2026-11-05-timeline-priority-notice"
+    after: "fdfa774fccfc91eece8c786e3ac20e416ac7df14903dab99751787dc80ee8a91"
     decision: same-version
 ```
 
