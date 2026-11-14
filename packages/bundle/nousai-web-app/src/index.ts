@@ -5,10 +5,10 @@
  * dist (workspace knowledge of this bundle, never user config) and mounts the
  * shared Web runtime glue with the NousAI identity: dist serving over the
  * frontend-static fallback seat, the `webApp` service, the NousAI-worded
- * bash-visible web runtime variable, and entry URL publication. The seat and readiness
- * mechanics live in `@deepseek-ai/dsh-web-app`'s `applyWebRuntime` so the two
- * runtimes cannot drift; the NousAI-worded model context comes from the
- * patch's restated `harness-dev-context` row.
+ * bash-visible web runtime variable, and entry URL publication. The seat and
+ * readiness mechanics live in `@deepseek-ai/dsh-web-app`'s `applyWebRuntime`
+ * so the two runtimes cannot drift; the NousAI-worded model context comes from
+ * the patch's restated `harness-dev-context` row.
  * @module @deepseek-ai/dsh-nousai-web-app
  */
 

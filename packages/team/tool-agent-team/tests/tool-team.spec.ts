@@ -345,7 +345,7 @@ describe('dsh-tool-team', () => {
     expect(childRequest.messages.at(-1)?.content).toContainEqual({ type: 'text', text: 'Continue independently' })
     expect(runtimeContextText(adapter.requests[1]!)).toContain(leadIdentity(handle.agent))
     expect(handle.agent.session.snapshotEvents().slice(seed.length).filter(event =>
-      event.type === 'user/message' && event.data.source.kind === 'runtime-context')).toHaveLength(0)
+      event.type === 'user/message' && event.data.source.kind === 'Runtime context')).toHaveLength(0)
     expect(handle.agent.session.snapshotEvents().slice(0, seed.length)).toEqual(seed)
     expect(ctx.subagents.rootOf(handle.agent)).toBe(handle.agent)
     await handle.dispose()

@@ -6,7 +6,7 @@
  */
 
 import { createSystemMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
-import type { ContextFormed, ContextSnapshotSection, Message } from '@deepseek-ai/dsh-llm'
+import type { ContextFormed, ContextSnapshotSection, Message, MessageSourceMap } from '@deepseek-ai/dsh-llm'
 import type { Session, SessionEvent, SessionSeq, SurfaceIntent, SystemMessage, UserMessage } from '@deepseek-ai/dsh-session'
 import { isReplacementSurfaceEvent } from '@deepseek-ai/dsh-session'
 import { deepEqualJson } from '@deepseek-ai/dsh-util-values'
@@ -17,8 +17,9 @@ declare module '@deepseek-ai/dsh-llm' {
     /**
      * The kind this fork writes for the same projection. Readers keep the message
      * and its JSON without this producer, and the kind carries no validation,
-     * replay, or authority requirement; only this projection reads it, to skip a
-     * repeated injection.
+     * replay, or authority requirement. This projection reads it to skip a
+     * repeated injection, and the experimental stats view counts it as a context
+     * refresh.
      * @persistenceAttribution
      */
     'Runtime context': { kind: 'Runtime context' } & ContextFormed
@@ -42,14 +43,15 @@ const CLEARED = '<system-reminder>\nCurrent runtime context: none. Earlier runti
  * @param message - user message to classify.
  * @returns true for a snapshot of either kind.
  */
-export function isRuntimeContextSnapshot(message: UserMessage): boolean {
+export function isRuntimeContextSnapshot(message: UserMessage): message is UserMessage & {
+  source: MessageSourceMap[typeof SOURCE] | MessageSourceMap[typeof RELEASED_SOURCE]
+} {
   return message.source.kind === SOURCE || message.source.kind === RELEASED_SOURCE
 }
 
 /** Older runtime-context messages of either kind may omit the structured snapshot contributions. */
 function sectionsOf(message: UserMessage): readonly ContextSnapshotSection[] | undefined {
-  const source = message.source
-  return (source.kind === SOURCE || source.kind === RELEASED_SOURCE) && source.form === 'snapshot' ? source.sections : undefined
+  return isRuntimeContextSnapshot(message) && message.source.form === 'snapshot' ? message.source.sections : undefined
 }
 
 function textOf(message: Message): string | undefined {
